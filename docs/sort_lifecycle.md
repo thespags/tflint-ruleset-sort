@@ -1,4 +1,4 @@
-# Rule `sheldon_lifecycle`
+# Rule `sort_lifecycle`
 
 Makes sure that `lifecycle` meta-block is placed at the bottom of
 `resource` or `data` block (but before `depends_on` if it's present).
@@ -19,7 +19,7 @@ resource "aws_instance" "example" {
 ```
 
 ```text
-Error: `lifecycle` block must be at the end of the definition (but before `depends_on`) (sheldon_lifecycle)
+Error: `lifecycle` block must be at the end of the definition (but before `depends_on`) (sort_lifecycle)
 
   on template.tf line 9:
    9:   lifecycle {

@@ -1,8 +1,8 @@
 package custom
 
 import (
-	"github.com/0x416e746f6e/tflint-ruleset-sheldon/config"
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
+	"github.com/thespags/tflint-ruleset-sort/config"
 )
 
 // Runner is a wrapper of RPC client with custom configuration.

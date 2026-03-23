@@ -15,7 +15,7 @@ resource "kubernetes_service_account" "this" {
 ```
 
 ```text
-Error: higher-priority key-attribute `namespace` should be defined before `name` (sheldon_key_attributes)
+Error: higher-priority key-attribute `namespace` should be defined before `name` (sort_key_attributes)
 
   on template.tf line 4:
    4:     namespace = kubernetes_namespace.this.metadata[0].name
@@ -36,7 +36,7 @@ module "vpc" {
 ```
 
 ```text
-Error: key-attribute `name` should be defined before non-key `other` (sheldon_key_attributes)
+Error: key-attribute `name` should be defined before non-key `other` (sort_key_attributes)
 
   on template.tf line 5:
    5:   name  = "my-vpc"

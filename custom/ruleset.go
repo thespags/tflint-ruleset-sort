@@ -1,21 +1,21 @@
 package custom
 
 import (
-	config2 "github.com/0x416e746f6e/tflint-ruleset-sheldon/config"
 	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
+	"github.com/thespags/tflint-ruleset-sort/config"
 )
 
 // RuleSet is the custom ruleset.
 type RuleSet struct {
 	tflint.BuiltinRuleSet
 
-	config *config2.Config
+	config *config.Config
 }
 
 // ConfigSchema returns the ruleset plugin config schema.
 func (r *RuleSet) ConfigSchema() *hclext.BodySchema {
-	r.config = config2.New()
+	r.config = config.New()
 
 	return hclext.ImpliedBodySchema(r.config)
 }
@@ -24,8 +24,8 @@ func (r *RuleSet) ConfigSchema() *hclext.BodySchema {
 func (r *RuleSet) ApplyConfig(body *hclext.BodyContent) error {
 	predefinedResources := r.config.Resources
 	predefinedModules := r.config.Modules
-	r.config.Resources = make([]*config2.Resource, 0)
-	r.config.Modules = make([]*config2.Resource, 0)
+	r.config.Resources = make([]*config.Resource, 0)
+	r.config.Modules = make([]*config.Resource, 0)
 
 	diags := hclext.DecodeBody(body, nil, r.config)
 	if diags.HasErrors() {

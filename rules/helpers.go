@@ -3,9 +3,9 @@ package rules
 import (
 	"strings"
 
-	"github.com/0x416e746f6e/tflint-ruleset-sheldon/node"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/thespags/tflint-ruleset-sort/node"
 )
 
 func toNames(nodes []node.InspectableNode) string {

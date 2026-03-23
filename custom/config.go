@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/0x416e746f6e/tflint-ruleset-sheldon/config"
+	"github.com/thespags/tflint-ruleset-sort/config"
 )
 
 func parseConfigResource(resource *config.Resource) (*Resource, error) {

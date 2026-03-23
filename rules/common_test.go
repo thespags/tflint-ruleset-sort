@@ -11,14 +11,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/0x416e746f6e/tflint-ruleset-sheldon/config"
-	"github.com/0x416e746f6e/tflint-ruleset-sheldon/custom"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/stretchr/testify/require"
 	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
 	"github.com/terraform-linters/tflint-plugin-sdk/helper"
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
+	"github.com/thespags/tflint-ruleset-sort/config"
+	"github.com/thespags/tflint-ruleset-sort/custom"
 )
 
 func runTests(t *testing.T, rule tflint.Rule) {

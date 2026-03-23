@@ -1,4 +1,4 @@
-# Rule `sheldon_depends_on`
+# Rule `sort_depends_on`
 
 Makes sure that `depends_on` meta-attribute is placed at the bottom of
 `resource` or `data` block.
@@ -19,7 +19,7 @@ resource "aws_instance" "example" {
 ```
 
 ```text
-Error: `depends_on` clause must be the last one in the definition (sheldon_depends_on)
+Error: `depends_on` clause must be the last one in the definition (sort_depends_on)
 
   on template.tf line 5:
    5:   depends_on = [

@@ -3,9 +3,9 @@ package rules
 import (
 	"strings"
 
-	"github.com/0x416e746f6e/tflint-ruleset-sheldon/node"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
+	"github.com/thespags/tflint-ruleset-sort/node"
 )
 
 // nodeLineRange returns a range covering the full lines of a node,
