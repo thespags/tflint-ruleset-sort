@@ -2,6 +2,7 @@ package rules
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
@@ -14,6 +15,7 @@ import (
 type UnknownResourceRule struct {
 	tflint.DefaultRule
 
+	mu            *sync.Mutex
 	seenResources map[string]struct{}
 	seenModules   map[string]struct{}
 }
@@ -21,6 +23,7 @@ type UnknownResourceRule struct {
 // NewUnknownResourceRule creates a new UnknownResourceRule.
 func NewUnknownResourceRule() *UnknownResourceRule {
 	return &UnknownResourceRule{
+		mu:            &sync.Mutex{},
 		seenResources: map[string]struct{}{},
 		seenModules:   map[string]struct{}{},
 	}
@@ -53,41 +56,11 @@ func (r *UnknownResourceRule) Check(rr tflint.Runner) error {
 	case *custom.Runner:
 		return visit.Blocks(runner, func(block *hclsyntax.Block, _ []byte) error {
 			if block.Type == "resource" || block.Type == "data" {
-				kind := block.Labels[0]
-				if _, kindIsKnown := runner.Resources[kind]; kindIsKnown {
-					return nil
-				}
-
-				if _, ok := r.seenResources[kind]; !ok {
-					r.seenResources[kind] = struct{}{}
-
-					return runner.EmitIssue(
-						r,
-						fmt.Sprintf("key-attributes for resource type `%s` are not configured", kind),
-						block.LabelRanges[0],
-					)
-				}
-
-				return nil
+				return r.checkBlock(runner, runner.Resources, block)
 			}
 
 			if block.Type == "module" {
-				kind := block.Labels[0]
-				if _, kindIsKnown := runner.Modules[kind]; kindIsKnown {
-					return nil
-				}
-
-				if _, ok := r.seenModules[kind]; !ok {
-					r.seenModules[kind] = struct{}{}
-
-					return runner.EmitIssue(
-						r,
-						fmt.Sprintf("key-attributes for resource type `%s` are not configured", kind),
-						block.LabelRanges[0],
-					)
-				}
-
-				return nil
+				return r.checkBlock(runner, runner.Modules, block)
 			}
 
 			return nil
@@ -96,4 +69,33 @@ func (r *UnknownResourceRule) Check(rr tflint.Runner) error {
 	default:
 		return nil
 	}
+}
+
+func (r *UnknownResourceRule) checkBlock(
+	runner *custom.Runner,
+	resources map[string]*custom.Resource,
+	block *hclsyntax.Block,
+) error {
+	kind := block.Labels[0]
+	if _, kindIsKnown := resources[kind]; kindIsKnown {
+		return nil
+	}
+
+	r.mu.Lock()
+
+	_, seen := r.seenResources[kind]
+	if !seen {
+		r.seenResources[kind] = struct{}{}
+	}
+	r.mu.Unlock()
+
+	if !seen {
+		return runner.EmitIssue(
+			r,
+			fmt.Sprintf("key-attributes for resource type `%s` are not configured", kind),
+			block.LabelRanges[0],
+		)
+	}
+
+	return nil
 }
