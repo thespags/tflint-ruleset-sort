@@ -3,11 +3,11 @@ package rules
 import (
 	"fmt"
 
-	"github.com/0x416e746f6e/tflint-ruleset-sheldon/node"
-	"github.com/0x416e746f6e/tflint-ruleset-sheldon/project"
-	"github.com/0x416e746f6e/tflint-ruleset-sheldon/visit"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
+	"github.com/thespags/tflint-ruleset-sort/node"
+	"github.com/thespags/tflint-ruleset-sort/project"
+	"github.com/thespags/tflint-ruleset-sort/visit"
 )
 
 // LifecycleRule makes sure that `lifecycle` clause is the last one before

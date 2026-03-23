@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/0x416e746f6e/tflint-ruleset-sheldon/custom"
-	"github.com/0x416e746f6e/tflint-ruleset-sheldon/project"
-	"github.com/0x416e746f6e/tflint-ruleset-sheldon/rules"
 	"github.com/terraform-linters/tflint-plugin-sdk/plugin"
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
+	"github.com/thespags/tflint-ruleset-sort/custom"
+	"github.com/thespags/tflint-ruleset-sort/project"
+	"github.com/thespags/tflint-ruleset-sort/rules"
 )
 
 func main() {

@@ -3,11 +3,11 @@ package rules
 import (
 	"fmt"
 
-	"github.com/0x416e746f6e/tflint-ruleset-sheldon/custom"
-	"github.com/0x416e746f6e/tflint-ruleset-sheldon/project"
-	"github.com/0x416e746f6e/tflint-ruleset-sheldon/visit"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
+	"github.com/thespags/tflint-ruleset-sort/custom"
+	"github.com/thespags/tflint-ruleset-sort/project"
+	"github.com/thespags/tflint-ruleset-sort/visit"
 )
 
 // UnknownResourceRule warns if the linter encounters unknown resource.

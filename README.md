@@ -1,23 +1,23 @@
-# TFLint Ruleset Sheldon
+![GitHub tag](https://img.shields.io/github/v/tag/OWNER/REPO)
 
-<div style=”text-align: right”><em>„This is my spot!”</em></div>
-
-<br>
+# TFLint Ruleset Sort
 
 TFLint ruleset plugin that enforces consistent Terraform formatting — sorting, spacing, and structural conventions.
+
+> **Note:** This project is a fork of [tflint-ruleset-sheldon](https://github.com/0x416e746f6e/tflint-ruleset-sheldon) by [@0x416e746f6e](https://github.com/0x416e746f6e), which was published without a license. This fork is maintained independently.
 
 ## Rules
 
 | Rule | Description |
 |------|-------------|
-| [`sheldon_count`](docs/sheldon_count.md) | `count` placed at top of resource |
-| [`sheldon_depends_on`](docs/sheldon_depends_on.md) | `depends_on` placed at end of resource |
-| [`sheldon_for_each`](docs/sheldon_for_each.md) | `for_each` placed at top of resource |
-| [`sheldon_key_attributes`](docs/sheldon_key_attributes.md) | Key attributes defined first and in priority order |
-| [`sheldon_lifecycle`](docs/sheldon_lifecycle.md) | `lifecycle` block placed at end of resource |
-| [`sheldon_sorting`](docs/sheldon_sorting.md) | Alphabetical sorting of blocks and dictionary keys |
-| [`sheldon_source`](docs/sheldon_source.md) | `source` placed at top of module |
-| [`sheldon_spacing`](docs/sheldon_spacing.md) | Consistent blank lines between attributes and blocks |
+| [`sort_count`](docs/sort_count.md) | `count` placed at top of resource |
+| [`sort_depends_on`](docs/sort_depends_on.md) | `depends_on` placed at end of resource |
+| [`sort_for_each`](docs/sort_for_each.md) | `for_each` placed at top of resource |
+| [`sort_key_attributes`](docs/sort_key_attributes.md) | Key attributes defined first and in priority order |
+| [`sort_lifecycle`](docs/sort_lifecycle.md) | `lifecycle` block placed at end of resource |
+| [`sort_sorting`](docs/sort_sorting.md) | Alphabetical sorting of blocks and dictionary keys |
+| [`sort_source`](docs/sort_source.md) | `source` placed at top of module |
+| [`sort_spacing`](docs/sort_spacing.md) | Consistent blank lines between attributes and blocks |
 
 ## Installation
 
@@ -25,26 +25,33 @@ You can install the plugin with `tflint --init`. Declare a config in
 `.tflint.hcl` as follows:
 
 ```hcl
-plugin "sheldon" {
+plugin "sort" {
   enabled = true
 
   version = "0.0.6"
-  source  = "github.com/0x416e746f6e/tflint-ruleset-sheldon"
+  source  = "github.com/thespags/tflint-ruleset-sort"
 }
 ```
 
-## Building the plugin
+## Building the plugin`
 
 Clone the repository locally and run the following command:
 
+With mise,
 ```bash
-make
+mise install
 ```
 
-You can easily install the built plugin with the following:
+Build the plugin with:
 
 ```bash
-make install
+go build ./...
+```
+
+You can install the built plugin with the following:
+
+```bash
+mise run install
 ```
 
 You can run the built plugin like the following:
@@ -55,7 +62,7 @@ config {
   plugin_dir = "~/.tflint.d/plugins"
 }
 
-plugin "sheldon" {
+plugin "sort" {
   enabled = true
 }
 EOF
@@ -69,7 +76,7 @@ key-attributes for a resource/data blocks (so that `key_attributes`
 rule picks them up) add them to in `.tflint.hcl` like follows:
 
 ```hcl
-plugin "sheldon" {
+plugin "sort" {
   enabled = true
 
   resource "kubernetes_deployment" {

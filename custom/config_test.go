@@ -3,9 +3,9 @@ package custom
 import (
 	"testing"
 
-	"github.com/0x416e746f6e/tflint-ruleset-sheldon/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/thespags/tflint-ruleset-sort/config"
 )
 
 func TestParseConfigResource(t *testing.T) {

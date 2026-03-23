@@ -1,4 +1,4 @@
-# Rule `sheldon_sorting`
+# Rule `sort_sorting`
 
 Makes sure that blocks and dictionary keys are sorted alphabetically.
 
@@ -23,7 +23,7 @@ resource "something" "this" {
 ```
 
 ```text
-Error: key `abc` is out of order (should not follow alphabetically greater `def`) (sheldon_sorting)
+Error: key `abc` is out of order (should not follow alphabetically greater `def`) (sort_sorting)
 
   on case-001.tf line 6:
    6:         "abc" = "yada-yada"

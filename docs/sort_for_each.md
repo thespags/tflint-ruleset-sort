@@ -14,7 +14,7 @@ resource "google_container_registry" "this" {
 ```
 
 ```text
-Error: `for_each` must be the top-most attribute (sheldon_for_each)
+Error: `for_each` must be the top-most attribute (sort_for_each)
 
   on template.tf line 4:
    4:   for_each = ["a", "b"]

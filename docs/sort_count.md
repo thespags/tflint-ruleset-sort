@@ -1,4 +1,4 @@
-# Rule `sheldon_count`
+# Rule `sort_count`
 
 Makes sure that `count` meta-attribute is placed at the top of `resource` or
 `data` block.
@@ -16,7 +16,7 @@ resource "random_password" "this" {
 ```
 
 ```text
-Error: `count` must be the top-most attribute (sheldon_count)
+Error: `count` must be the top-most attribute (sort_count)
 
   on template.tf line 6:
    6:   count = 10
