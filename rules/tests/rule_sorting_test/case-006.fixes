@@ -1,0 +1,11 @@
+# Test: Single-line attribute precedes multi-line block; attribute precedes block
+resource "example" "this" {
+  nested {
+    aaa = "single"
+
+    zzz_block {
+      x = 1
+      y = 2
+    }
+  }
+}

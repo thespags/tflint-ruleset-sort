@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "higher-priority key-attribute `region` should be defined before `name`",
+        "Range": {
+            "Start": {
+                "Line": 5,
+                "Column": 3
+            },
+            "End": {
+                "Line": 5,
+                "Column": 32
+            }
+        }
+    }
+]

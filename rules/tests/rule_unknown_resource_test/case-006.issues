@@ -1,0 +1,28 @@
+[
+    {
+        "Message": "key-attributes for resource type `zeta_mod_a` are not configured",
+        "Range": {
+            "Start": {
+                "Line": 2,
+                "Column": 8
+            },
+            "End": {
+                "Line": 2,
+                "Column": 20
+            }
+        }
+    },
+    {
+        "Message": "key-attributes for resource type `zeta_mod_b` are not configured",
+        "Range": {
+            "Start": {
+                "Line": 6,
+                "Column": 8
+            },
+            "End": {
+                "Line": 6,
+                "Column": 20
+            }
+        }
+    }
+]

@@ -1,0 +1,7 @@
+# Test: Locals block expression checking with dontSortMultiliners
+locals {
+  obj = {
+    "aaa" = "val"
+    "bbb" = "val"
+  }
+}

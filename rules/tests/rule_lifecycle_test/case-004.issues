@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "`lifecycle` block must be at the end of the definition (but before `depends_on`)",
+        "Range": {
+            "Start": {
+                "Line": 3,
+                "Column": 13
+            },
+            "End": {
+                "Line": 5,
+                "Column": 4
+            }
+        }
+    }
+]

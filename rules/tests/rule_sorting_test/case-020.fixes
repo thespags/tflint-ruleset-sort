@@ -1,0 +1,6 @@
+resource "example" "this" {
+  can_push = true
+  key      = "baz"
+  project  = "foo"
+  title    = "bar"
+}

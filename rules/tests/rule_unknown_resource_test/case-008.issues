@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "key-attributes for resource type `unknown_special` are not configured",
+        "Range": {
+            "Start": {
+                "Line": 7,
+                "Column": 10
+            },
+            "End": {
+                "Line": 7,
+                "Column": 27
+            }
+        }
+    }
+]

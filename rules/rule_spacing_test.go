@@ -5,7 +5,6 @@ import (
 )
 
 func TestSpacingRule(t *testing.T) {
-	runTests(t,
-		NewSpacingRule(),
-	)
+	t.Parallel()
+	runTests(t, NewSpacingRule())
 }

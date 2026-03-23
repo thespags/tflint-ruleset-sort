@@ -1,0 +1,9 @@
+# Test: For expression steps inside to check value expression (checkForExpr)
+resource "example" "this" {
+  tags = {
+    for k, v in var.map : k => {
+      "bbb" = v
+      "aaa" = v
+    }
+  }
+}

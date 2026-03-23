@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "single-line element must be separated from the preceding multi-line one by an extra line",
+        "Range": {
+            "Start": {
+                "Line": 7,
+                "Column": 5
+            },
+            "End": {
+                "Line": 7,
+                "Column": 21
+            }
+        }
+    }
+]

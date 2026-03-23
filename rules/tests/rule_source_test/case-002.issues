@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "`source` must be the top-most attribute",
+        "Range": {
+            "Start": {
+                "Line": 10,
+                "Column": 3
+            },
+            "End": {
+                "Line": 10,
+                "Column": 52
+            }
+        }
+    }
+]

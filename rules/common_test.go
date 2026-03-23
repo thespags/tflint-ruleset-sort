@@ -2,7 +2,7 @@ package rules
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io/fs"
 	"os"
 	"path"
@@ -13,17 +13,19 @@ import (
 
 	"github.com/0x416e746f6e/tflint-ruleset-sheldon/config"
 	"github.com/0x416e746f6e/tflint-ruleset-sheldon/custom"
+	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/stretchr/testify/require"
+	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
 	"github.com/terraform-linters/tflint-plugin-sdk/helper"
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
 )
 
-const marker = "### Expected Issues ###"
+func runTests(t *testing.T, rule tflint.Rule) {
+	t.Helper()
 
-func runTests(t *testing.T, r tflint.Rule) {
 	_, testFilename, _, ok := runtime.Caller(1)
-	if !ok {
-		t.Fatal("Could not get the caller of `runTestCases` from runtime")
-	}
+	require.True(t, ok, "Could not get the caller of `runTestCases` from runtime")
 
 	dir := path.Join(
 		path.Dir(testFilename),
@@ -31,68 +33,114 @@ func runTests(t *testing.T, r tflint.Rule) {
 		strings.TrimSuffix(path.Base(testFilename), path.Ext(testFilename)),
 	)
 
-	if err := filepath.Walk(dir, func(tfFilename string, tfInfo fs.FileInfo, _err error) error {
+	err := filepath.Walk(dir, func(tfFilename string, tfInfo fs.FileInfo, _err error) error {
 		// Skip directories and non terraform files
 		if _err != nil {
 			return _err
 		}
+
 		if tfInfo.IsDir() {
 			return nil
 		}
+
 		ext := path.Ext(tfFilename)
 		if ext != ".tf" {
 			return nil
 		}
 
-		// Get terraform content
-		tfBytes, err := os.ReadFile(tfFilename)
-		if err != nil {
-			return fmt.Errorf("%s: %s", tfFilename, err)
-		}
-		tfContent := string(tfBytes)
+		terraform := readTerraform(t, tfFilename)
+		expectedIssues := readIssues(t, rule, tfFilename)
+		expectedFixes := readFixes(t, tfFilename)
 
-		// Learn the expected results
-		issContent := "[]"
-		for _, l := range strings.Split(tfContent, "\n") {
-			if strings.TrimSpace(l) == marker {
-				issContent = ""
-				continue
-			}
-			if issContent == "[]" {
-				continue
-			}
-			issContent = issContent + strings.TrimSpace(strings.TrimPrefix(l, "# "))
-		}
-		iss := helper.Issues{}
-		err = json.Unmarshal([]byte(issContent), &iss)
-		if err != nil {
-			return fmt.Errorf("%s: %s: %s", tfFilename, err, issContent)
-		}
-
-		for _, i := range iss {
-			i.Rule = r
-			i.Range.Filename = tfFilename
-		}
-
-		// Create a runner
 		helperRunner := helper.TestRunner(
 			t,
-			map[string]string{tfFilename: tfContent},
+			map[string]string{tfFilename: terraform},
 		)
-		runner, err := custom.NewRunner(helperRunner, config.New())
-		if err != nil {
-			return fmt.Errorf("%s: %s", tfFilename, err)
-		}
+		runner, err := custom.NewRunner(helperRunner, readConfig(t, tfFilename))
+		require.NoError(t, err)
 
-		// Run the test
-		t.Logf("Testing `%s` against `%s` rule", tfFilename, r.Name())
-		if err := r.Check(runner); err != nil {
-			return fmt.Errorf("%s: %s", tfFilename, err)
-		}
-		helper.AssertIssues(t, iss, helperRunner.Issues)
+		t.Run(filepath.Base(tfFilename), func(t *testing.T) {
+			t.Parallel()
+
+			err = rule.Check(runner)
+			require.NoError(t, err)
+			helper.AssertIssues(t, expectedIssues, helperRunner.Issues)
+			helper.AssertChanges(t, expectedFixes, helperRunner.Changes())
+		})
 
 		return nil
-	}); err != nil {
-		t.Fatalf("Failed to run tests: %s", err)
+	})
+	require.NoError(t, err)
+}
+
+func readConfig(t *testing.T, tfFilename string) *config.Config {
+	t.Helper()
+
+	configFilename := strings.TrimSuffix(tfFilename, ".tf") + ".config"
+
+	content, err := os.ReadFile(configFilename)
+	if errors.Is(err, os.ErrNotExist) {
+		return config.New()
+	}
+
+	require.NoError(t, err)
+
+	file, diags := hclsyntax.ParseConfig(content, configFilename, hcl.Pos{Line: 1, Column: 1})
+	require.False(t, diags.HasErrors(), "Failed to parse config: %s", diags.Error())
+
+	schema := hclext.ImpliedBodySchema(&config.Config{})
+	body, diags := hclext.Content(file.Body, schema)
+	require.False(t, diags.HasErrors(), "Failed to get config content: %s", diags.Error())
+
+	cfg := config.New()
+	diags = hclext.DecodeBody(body, nil, cfg)
+	require.False(t, diags.HasErrors(), "Failed to decode config: %s", diags.Error())
+
+	return cfg
+}
+
+func readTerraform(t *testing.T, tfFilename string) string {
+	t.Helper()
+
+	tfBytes, err := os.ReadFile(tfFilename)
+	require.NoError(t, err)
+
+	return string(tfBytes)
+}
+
+func readIssues(t *testing.T, rule tflint.Rule, tfFilename string) helper.Issues {
+	t.Helper()
+
+	content, err := os.ReadFile(strings.TrimSuffix(tfFilename, ".tf") + ".issues")
+	if errors.Is(err, os.ErrNotExist) {
+		return helper.Issues{}
+	}
+
+	require.NoError(t, err)
+
+	issue := helper.Issues{}
+	err = json.Unmarshal(content, &issue)
+	require.NoError(t, err)
+
+	for _, i := range issue {
+		i.Rule = rule
+		i.Range.Filename = tfFilename
+	}
+
+	return issue
+}
+
+func readFixes(t *testing.T, tfFilename string) map[string]string {
+	t.Helper()
+
+	content, err := os.ReadFile(strings.TrimSuffix(tfFilename, ".tf") + ".fixes")
+	if errors.Is(err, os.ErrNotExist) {
+		return map[string]string{}
+	}
+
+	require.NoError(t, err)
+
+	return map[string]string{
+		tfFilename: string(content),
 	}
 }

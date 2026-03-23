@@ -1,0 +1,9 @@
+# Test: Object sorting inside tuple/list element (checkTupleConsExpr)
+resource "example" "this" {
+  list = [
+    {
+      "aaa" = "val"
+      "bbb" = "val"
+    },
+  ]
+}

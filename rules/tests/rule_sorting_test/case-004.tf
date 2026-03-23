@@ -1,3 +1,4 @@
+# Test: Comments between blocks prevent sorting
 terraform {
   required_providers {
     google = {

@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "`(project, title, key, can_push)` should be reordered `(can_push, key, project, title)` (alphabetical sorting)",
+        "Range": {
+            "Start": {
+                "Line": 2,
+                "Column": 3
+            },
+            "End": {
+                "Line": 5,
+                "Column": 18
+            }
+        }
+    }
+]

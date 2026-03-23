@@ -1,3 +1,4 @@
+# Test: passing - count is correctly the top-most attribute
 resource "random_password" "this" {
   count = 10
 

@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "single-line nodes `(aaa)` should precede multi-lines `(zzz_block)`",
+        "Range": {
+            "Start": {
+                "Line": 4,
+                "Column": 5
+            },
+            "End": {
+                "Line": 10,
+                "Column": 16
+            }
+        }
+    }
+]

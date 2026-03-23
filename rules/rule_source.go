@@ -19,17 +19,17 @@ func NewSourceRule() *SourceRule {
 }
 
 // Name returns the name of the rule.
-func (r *SourceRule) Name() string {
+func (*SourceRule) Name() string {
 	return project.RuleName("source")
 }
 
 // Enabled returns whether the rule is enabled by default.
-func (r *SourceRule) Enabled() bool {
+func (*SourceRule) Enabled() bool {
 	return true
 }
 
 // Severity returns the severity of the rule.
-func (r *SourceRule) Severity() tflint.Severity {
+func (*SourceRule) Severity() tflint.Severity {
 	return tflint.ERROR
 }
 
@@ -38,26 +38,31 @@ func (r *SourceRule) Link() string {
 	return project.ReferenceLink(r.Name())
 }
 
-// Check verifies whether `source` clause is placed on the top of the module
+// Check verifies whether the `source` clause is placed on the top of the module
 // definition.
 func (r *SourceRule) Check(runner tflint.Runner) error {
-	return visit.Blocks(r, runner, func(b *hclsyntax.Block, _ []byte) error {
-		if b.Type != "module" {
+	return visit.Blocks(runner, func(block *hclsyntax.Block, src []byte) error {
+		if block.Type != "module" {
 			return nil
 		}
 
-		source, exists := b.Body.Attributes["source"]
+		source, exists := block.Body.Attributes["source"]
 		if !exists {
 			return nil
 		}
-		if node.FirstNodeFrom(b.Body).AsAttribute() == source {
+
+		first := node.FirstNodeFrom(block.Body)
+		if first.AsAttribute() == source {
 			return nil
 		}
 
-		return runner.EmitIssue(
+		return runner.EmitIssueWithFix(
 			r,
 			"`source` must be the top-most attribute",
 			source.SrcRange,
+			func(fixer tflint.Fixer) error {
+				return moveNodeBefore(fixer, src, source.SrcRange, first.Range())
+			},
 		)
 	})
 }

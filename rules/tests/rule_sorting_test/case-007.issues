@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "`(zzz_block, aaa_block)` should be reordered `(aaa_block, zzz_block)` (alphabetical sorting)",
+        "Range": {
+            "Start": {
+                "Line": 4,
+                "Column": 5
+            },
+            "End": {
+                "Line": 10,
+                "Column": 6
+            }
+        }
+    }
+]

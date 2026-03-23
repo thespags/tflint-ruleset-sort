@@ -1,3 +1,4 @@
+# Test: passing - for_each is correctly the top-most attribute
 resource "google_container_registry" "this" {
   for_each = local.cfg.gcp.gcr
 

@@ -1,3 +1,4 @@
+# Test: correctly spaced resource with count and blocks (no issues)
 resource "kubernetes_config_map" "this" {
   count = var.create_map ? 1 : 0
 

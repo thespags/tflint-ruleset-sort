@@ -7,9 +7,10 @@ import (
 // Config is the configuration for the ruleset.
 type Config struct {
 	Resources []*Resource `hclext:"resource,block"`
+	Modules   []*Resource `hclext:"module,block"`
 }
 
-// Resource is the custom configuration of the resource-specific behaviour.
+// Resource is the custom configuration of the resource-specific behavior.
 type Resource struct {
 	Kind string   `hclext:"name,label"`
 	Keys []string `hclext:"key_attributes"`
@@ -18,6 +19,7 @@ type Resource struct {
 // New creates a new configuration structure that is pre-filled with defaults.
 func New() *Config {
 	return &Config{
+		Modules: []*Resource{},
 		Resources: []*Resource{
 			{Kind: "archive_file", Keys: []string{"source_file", "output_path"}},
 			{Kind: "external", Keys: []string{}},
@@ -27,7 +29,10 @@ func New() *Config {
 			{Kind: "google_cloud_run_service", Keys: []string{"project", "location", "name"}},
 			{Kind: "google_cloud_scheduler_job", Keys: []string{"project", "region", "name"}},
 			{Kind: "google_cloudbuild_trigger", Keys: []string{"project", "location", "name"}},
-			{Kind: "google_cloudfunctions2_function_iam_member", Keys: []string{"project", "location", "cloud_function", "role", "member"}},
+			{
+				Kind: "google_cloudfunctions2_function_iam_member",
+				Keys: []string{"project", "location", "cloud_function", "role", "member"},
+			},
 			{Kind: "google_cloudfunctions2_function", Keys: []string{"project", "location", "name"}},
 			{Kind: "google_compute_address", Keys: []string{"project", "region", "name"}},
 			{Kind: "google_compute_backend_service", Keys: []string{"project", "name"}},
@@ -109,7 +114,10 @@ func New() *Config {
 			{Kind: "kubernetes_cron_job", Keys: []string{"metadata.namespace", "metadata.name"}},
 			{Kind: "kubernetes_deployment", Keys: []string{"metadata.namespace", "metadata.name"}},
 			{Kind: "kubernetes_endpoints", Keys: []string{"metadata.namespace", "metadata.name"}},
-			{Kind: "kubernetes_manifest", Keys: []string{"manifest.metadata.namespace", "manifest.metadata.name"}}, // TODO: Search for keys in attributes too
+			{
+				Kind: "kubernetes_manifest",
+				Keys: []string{"manifest.metadata.namespace", "manifest.metadata.name"},
+			}, // TODO: Search for keys in attributes too
 			{Kind: "kubernetes_namespace", Keys: []string{"metadata.namespace", "metadata.name"}},
 			{Kind: "kubernetes_persistent_volume_claim", Keys: []string{"metadata.namespace", "metadata.name"}},
 			{Kind: "kubernetes_resource_quota", Keys: []string{"metadata.namespace", "metadata.name"}},
@@ -157,5 +165,6 @@ func (r *Resource) String() string {
 	if err != nil {
 		return err.Error()
 	}
+
 	return string(b)
 }

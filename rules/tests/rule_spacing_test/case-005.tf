@@ -1,3 +1,4 @@
+# Test: comment between attributes with proper spacing (no issues)
 resource "kubernetes_config_map" "this" {
   count = var.create_map ? 1 : 0
 

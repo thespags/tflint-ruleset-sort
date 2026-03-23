@@ -5,7 +5,6 @@ import (
 )
 
 func TestSourceRule(t *testing.T) {
-	runTests(t,
-		NewSourceRule(),
-	)
+	t.Parallel()
+	runTests(t, NewSourceRule())
 }

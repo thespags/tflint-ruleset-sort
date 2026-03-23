@@ -1,3 +1,4 @@
+# Test: failing - count is not the top-most attribute
 resource "random_password" "this" {
   length           = 16
   override_special = "!#$%&*()-_=+[]{}<>:?"
@@ -5,15 +6,3 @@ resource "random_password" "this" {
 
   count = 10
 }
-
-### Expected Issues ###
-
-# [
-#     {
-#         "Message": "`count` must be the top-most attribute",
-#         "Range": {
-#             "Start": { "Line": 6, "Column": 3 },
-#             "End": { "Line": 6, "Column": 13 }
-#         }
-#     }
-# ]

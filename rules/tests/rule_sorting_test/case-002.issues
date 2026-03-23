@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "`(required_providers, backend gcs)` should be reordered `(backend gcs, required_providers)` (alphabetical sorting)",
+        "Range": {
+            "Start": {
+                "Line": 3,
+                "Column": 3
+            },
+            "End": {
+                "Line": 13,
+                "Column": 4
+            }
+        }
+    }
+]

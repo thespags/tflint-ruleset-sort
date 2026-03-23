@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "key-attributes for resource type `delta_query` are not configured",
+        "Range": {
+            "Start": {
+                "Line": 2,
+                "Column": 6
+            },
+            "End": {
+                "Line": 2,
+                "Column": 19
+            }
+        }
+    }
+]

@@ -1,0 +1,11 @@
+# Test: redundant blank lines inside a list literal (before, between, after)
+resource "example" "this" {
+  list = [
+
+    "a",
+
+
+    "b",
+
+  ]
+}

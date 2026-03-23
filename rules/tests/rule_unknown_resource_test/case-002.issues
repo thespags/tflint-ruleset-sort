@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "key-attributes for resource type `beta_gadget` are not configured",
+        "Range": {
+            "Start": {
+                "Line": 2,
+                "Column": 10
+            },
+            "End": {
+                "Line": 2,
+                "Column": 23
+            }
+        }
+    }
+]

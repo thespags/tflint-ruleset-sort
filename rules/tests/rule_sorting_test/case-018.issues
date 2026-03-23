@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "key `aaa` is out of order (should not follow alphabetically greater `bbb`)",
+        "Range": {
+            "Start": {
+                "Line": 5,
+                "Column": 5
+            },
+            "End": {
+                "Line": 5,
+                "Column": 10
+            }
+        }
+    }
+]

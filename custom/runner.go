@@ -14,6 +14,9 @@ type Runner struct {
 
 	// Resources stores the configuration of terraform resources.
 	Resources map[string]*Resource
+
+	// Modules stores the configuration of terraform modules (keyed by source).
+	Modules map[string]*Resource
 }
 
 // Resource is the configuration of the `resource` and `data` blocks that linter
@@ -23,26 +26,39 @@ type Resource struct {
 	// key-attributes (for example, `metadata` in kubernetes resources).
 	KeyBlocks []string
 
-	// KeyAttributes is the prioritised list of attributes that uniquely
+	// KeyAttributes is the prioritized list of attributes that uniquely
 	// identify the `resource` or `data` block.
 	KeyAttributes []string
 }
 
 // NewRunner returns a new runner.
-func NewRunner(runner tflint.Runner, config *config.Config) (*Runner, error) {
+func NewRunner(runner tflint.Runner, customConfig *config.Config) (*Runner, error) {
 	resources := map[string]*Resource{}
 
-	for _, r := range config.Resources {
-		res, err := parseConfigResource(r)
+	for _, resource := range customConfig.Resources {
+		res, err := parseConfigResource(resource)
 		if err != nil {
 			return nil, err
 		}
-		resources[r.Kind] = res
+
+		resources[resource.Kind] = res
+	}
+
+	modules := map[string]*Resource{}
+
+	for _, module := range customConfig.Modules {
+		res, err := parseConfigResource(module)
+		if err != nil {
+			return nil, err
+		}
+
+		modules[module.Kind] = res
 	}
 
 	return &Runner{
 		Runner:    runner,
 		Disabled:  make(map[string]bool),
 		Resources: resources,
+		Modules:   modules,
 	}, nil
 }

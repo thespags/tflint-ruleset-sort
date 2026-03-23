@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "more than 1 `lifecycle` block found",
+        "Range": {
+            "Start": {
+                "Line": 7,
+                "Column": 3
+            },
+            "End": {
+                "Line": 7,
+                "Column": 12
+            }
+        }
+    }
+]
