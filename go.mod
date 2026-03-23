@@ -4,7 +4,7 @@ go 1.26.1
 
 require (
 	github.com/hashicorp/hcl/v2 v2.24.0
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.11.1
 	github.com/terraform-linters/tflint-plugin-sdk v0.24.0
 )
 
