@@ -7,11 +7,8 @@ import (
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
 )
 
-func Files(
-	rule tflint.Rule,
-	runner tflint.Runner,
-	visit func(*hclsyntax.Body, []byte) error,
-) error {
+// Files visits all files in a runner.
+func Files(runner tflint.Runner, visit func(*hclsyntax.Body, []byte) error) error {
 	files, err := runner.GetFiles()
 	if err != nil {
 		return err
@@ -27,7 +24,6 @@ func Files(
 		}
 
 		if err := visit(body, file.Bytes); err != nil {
-
 			return err
 		}
 	}
@@ -35,17 +31,15 @@ func Files(
 	return nil
 }
 
-func Blocks(
-	rule tflint.Rule,
-	runner tflint.Runner,
-	visit func(*hclsyntax.Block, []byte) error,
-) error {
-	return Files(rule, runner, func(body *hclsyntax.Body, bytes []byte) error {
+// Blocks visits all blocks in a file.
+func Blocks(runner tflint.Runner, visit func(*hclsyntax.Block, []byte) error) error {
+	return Files(runner, func(body *hclsyntax.Body, bytes []byte) error {
 		for _, block := range body.Blocks {
 			if err := visit(block, bytes); err != nil {
 				return err
 			}
 		}
+
 		return nil
 	})
 }

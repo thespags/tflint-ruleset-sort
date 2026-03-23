@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "`for_each` must be the top-most attribute",
+        "Range": {
+            "Start": {
+                "Line": 5,
+                "Column": 3
+            },
+            "End": {
+                "Line": 5,
+                "Column": 24
+            }
+        }
+    }
+]

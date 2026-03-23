@@ -9,45 +9,56 @@ type attribute struct {
 	attribute *hclsyntax.Attribute
 }
 
+// WrapAttribute wraps an HCL attribute as an InspectableNode.
 func WrapAttribute(a *hclsyntax.Attribute) InspectableNode {
 	return &attribute{
 		attribute: a,
 	}
 }
 
+// Range returns the source range of the attribute.
 func (a attribute) Range() hcl.Range {
 	return a.attribute.Range()
 }
 
-func (a attribute) Kind() Kind {
+// Kind returns Attribute.
+func (attribute) Kind() Kind {
 	return Attribute
 }
 
+// AsAttribute returns the underlying HCL attribute.
 func (a attribute) AsAttribute() *hclsyntax.Attribute {
 	return a.attribute
 }
 
-func (a attribute) AsBlock() *hclsyntax.Block {
+// AsBlock returns nil (attributes are not blocks).
+func (attribute) AsBlock() *hclsyntax.Block {
 	return nil
 }
 
-func (a attribute) IsAttribute() bool {
+// IsAttribute returns true.
+func (attribute) IsAttribute() bool {
 	return true
 }
 
-func (a attribute) IsBlock() bool {
+// IsBlock returns false.
+func (attribute) IsBlock() bool {
 	return false
 }
 
+// Name returns the attribute name.
 func (a attribute) Name() string {
 	return a.attribute.Name
 }
 
-func (a attribute) Type() string {
+// Type returns "attribute".
+func (attribute) Type() string {
 	return "attribute"
 }
 
+// Lines returns the number of lines the attribute spans.
 func (a attribute) Lines() int {
 	r := a.Range()
+
 	return r.End.Line - r.Start.Line + 1
 }

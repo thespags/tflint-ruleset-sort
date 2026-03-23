@@ -19,17 +19,17 @@ func NewDependsOnRule() *DependsOnRule {
 }
 
 // Name returns the name of the rule.
-func (r *DependsOnRule) Name() string {
+func (*DependsOnRule) Name() string {
 	return project.RuleName("depends_on")
 }
 
 // Enabled returns whether the rule is enabled by default.
-func (r *DependsOnRule) Enabled() bool {
+func (*DependsOnRule) Enabled() bool {
 	return true
 }
 
 // Severity returns the severity of the rule.
-func (r *DependsOnRule) Severity() tflint.Severity {
+func (*DependsOnRule) Severity() tflint.Severity {
 	return tflint.ERROR
 }
 
@@ -38,26 +38,31 @@ func (r *DependsOnRule) Link() string {
 	return project.ReferenceLink(r.Name())
 }
 
-// Check verifies whether `depends_on` clause is placed at the end of the
+// Check verifies whether the `depends_on` clause is placed at the end of the
 // resource definition.
 func (r *DependsOnRule) Check(runner tflint.Runner) error {
-	return visit.Blocks(r, runner, func(b *hclsyntax.Block, _ []byte) error {
-		if b.Type != "resource" && b.Type != "data" {
+	return visit.Blocks(runner, func(block *hclsyntax.Block, src []byte) error {
+		if block.Type != "resource" && block.Type != "data" {
 			return nil
 		}
 
-		dependsOn, exists := b.Body.Attributes["depends_on"]
+		dependsOn, exists := block.Body.Attributes["depends_on"]
 		if !exists {
 			return nil
 		}
-		if node.LastNodeFrom(b.Body).AsAttribute() == dependsOn {
+
+		last := node.LastNodeFrom(block.Body)
+		if last.AsAttribute() == dependsOn {
 			return nil
 		}
 
-		return runner.EmitIssue(
+		return runner.EmitIssueWithFix(
 			r,
 			"`depends_on` clause must be the last one in the definition",
 			dependsOn.SrcRange,
+			func(fixer tflint.Fixer) error {
+				return moveNodeAfter(fixer, src, dependsOn.SrcRange, last.Range())
+			},
 		)
 	})
 }

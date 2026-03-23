@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "higher-priority key-attribute `namespace` should be defined before `name`",
+        "Range": {
+            "Start": {
+                "Line": 9,
+                "Column": 7
+            },
+            "End": {
+                "Line": 9,
+                "Column": 24
+            }
+        }
+    }
+]

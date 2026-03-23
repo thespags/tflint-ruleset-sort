@@ -5,7 +5,6 @@ import (
 )
 
 func TestForEachRule(t *testing.T) {
-	runTests(t,
-		NewForEachRule(),
-	)
+	t.Parallel()
+	runTests(t, NewForEachRule())
 }

@@ -5,7 +5,6 @@ import (
 )
 
 func TestDependsOnRule(t *testing.T) {
-	runTests(t,
-		NewDependsOnRule(),
-	)
+	t.Parallel()
+	runTests(t, NewDependsOnRule())
 }

@@ -5,7 +5,6 @@ import (
 )
 
 func TestKeyAttributesRule(t *testing.T) {
-	runTests(t,
-		NewKeyAttributesRule(),
-	)
+	t.Parallel()
+	runTests(t, NewKeyAttributesRule())
 }

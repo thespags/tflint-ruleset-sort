@@ -2,7 +2,7 @@ module github.com/0x416e746f6e/tflint-ruleset-sheldon
 
 go 1.23.0
 
-toolchain go1.24.0
+toolchain go1.26.1
 
 require (
 	github.com/hashicorp/hcl/v2 v2.24.0

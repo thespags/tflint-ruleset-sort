@@ -1,0 +1,8 @@
+# Test: redundant blank line before a comment between attributes
+resource "example" "this" {
+  attr_a = "a"
+
+
+  # comment
+  attr_b = "b"
+}

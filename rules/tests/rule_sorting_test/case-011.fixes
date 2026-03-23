@@ -1,0 +1,7 @@
+# Test: Object sorting inside parenthesized expression (checkParenthesesExpr)
+resource "example" "this" {
+  value = ({
+    "aaa" = "val"
+    "bbb" = "val"
+  })
+}

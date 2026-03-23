@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "single-line key/value pair should be placed before multi-line",
+        "Range": {
+            "Start": {
+                "Line": 7,
+                "Column": 5
+            },
+            "End": {
+                "Line": 7,
+                "Column": 10
+            }
+        }
+    }
+]

@@ -1,0 +1,10 @@
+# Test: failing - more than one lifecycle block found
+resource "aws_instance" "example" {
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}

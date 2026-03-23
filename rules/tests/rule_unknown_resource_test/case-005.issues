@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "key-attributes for resource type `epsilon_mod` are not configured",
+        "Range": {
+            "Start": {
+                "Line": 2,
+                "Column": 8
+            },
+            "End": {
+                "Line": 2,
+                "Column": 21
+            }
+        }
+    }
+]

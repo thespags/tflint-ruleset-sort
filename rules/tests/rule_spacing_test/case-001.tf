@@ -1,3 +1,4 @@
+# Test: locals block with for expression (no issues expected)
 # Comment
 
 locals {

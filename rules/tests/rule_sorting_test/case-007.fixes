@@ -1,0 +1,12 @@
+# Test: Multi-liner alphabetical sorting (two multi-line blocks out of order)
+resource "example" "this" {
+  nested {
+    aaa_block {
+      b = 2
+    }
+
+    zzz_block {
+      a = 1
+    }
+  }
+}

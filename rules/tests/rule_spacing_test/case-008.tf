@@ -1,3 +1,4 @@
+# Test: missing blank line after count and trailing blank before closing brace
 resource "kubernetes_config_map" "this" {
   count = var.create_map ? 1 : 0
   metadata {
@@ -11,28 +12,7 @@ resource "kubernetes_config_map" "this" {
 
 }
 
-### Expected Issues ###
-
-# [
-#     {
-#         "Message": "attribute `count` must be separated from the rest of the definition by an extra line",
-#         "Range": {
-#             "Start": { "Line": 2, "Column": 3 },
-#             "End": { "Line": 2, "Column": 33 }
-#         }
-#     },
-#     {
-#         "Message": "multi-line element must be separated from the previous one by an extra line",
-#         "Range": {
-#             "Start": { "Line": 3, "Column": 3 },
-#             "End": { "Line": 6, "Column": 4 }
-#         }
-#     },
-#     {
-#         "Message": "1 redundant blank line in front",
-#         "Range": {
-#             "Start": { "Line": 12, "Column": 1 },
-#             "End": { "Line": 12, "Column": 2 }
-#         }
-#     }
-# ]
+resource "aws_iam_user" "the-accounts" {
+  for_each = toset(["Todd", "James", "Alice", "Dottie"])
+  name     = each.key
+}

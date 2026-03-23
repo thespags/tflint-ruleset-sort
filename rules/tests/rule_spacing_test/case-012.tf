@@ -1,0 +1,17 @@
+# Test: redundant blank lines inside empty map, list, and function call
+resource "example" "this" {
+  empty_map = {
+
+
+  }
+
+  empty_list = [
+
+
+  ]
+
+  empty_call = toset(
+
+
+  )
+}

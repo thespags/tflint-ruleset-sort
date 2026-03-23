@@ -5,7 +5,6 @@ import (
 )
 
 func TestCountRule(t *testing.T) {
-	runTests(t,
-		NewCountRule(),
-	)
+	t.Parallel()
+	runTests(t, NewCountRule())
 }

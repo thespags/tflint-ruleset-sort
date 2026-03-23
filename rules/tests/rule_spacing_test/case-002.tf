@@ -1,3 +1,4 @@
+# Test: properly spaced resource with comment after opening brace
 variable "create_map" {}
 
 resource "kubernetes_config_map" "this" {

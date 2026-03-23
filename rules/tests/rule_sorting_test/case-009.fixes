@@ -1,0 +1,12 @@
+# Test: Attribute after dynamic block (single-line precedes multi-line)
+resource "example" "this" {
+  nested {
+    aaa = "val"
+
+    dynamic "zzz_block" {
+      content {
+        x = 1
+      }
+    }
+  }
+}

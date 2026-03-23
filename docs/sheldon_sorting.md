@@ -5,7 +5,7 @@ Makes sure that blocks and dictionary keys are sorted alphabetically.
 - Single-line elements are defined before the multi-line ones.
 - Each consecutive chunk of single-liners is sorted individually.
 - The position of special cases like `for_each`/`count`, `depends_on`, and so on
-  is respected so that there is no contradictions.
+  is respected so that there are no contradictions.
 
 ## Example
 

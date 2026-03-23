@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "`depends_on` clause must be the last one in the definition",
+        "Range": {
+            "Start": {
+                "Line": 6,
+                "Column": 3
+            },
+            "End": {
+                "Line": 8,
+                "Column": 4
+            }
+        }
+    }
+]

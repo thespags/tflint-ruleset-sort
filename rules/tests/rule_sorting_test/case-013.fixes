@@ -1,0 +1,10 @@
+# Test: Preprocessing drops trailing depends_on from sorting
+resource "google_storage_bucket" "this" {
+  project = "my-project"
+  name    = "my-bucket"
+
+  aaa = "first"
+  zzz = "last"
+
+  depends_on = [null_resource.this]
+}

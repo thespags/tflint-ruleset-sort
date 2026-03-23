@@ -1,0 +1,11 @@
+# Test: Object key alphabetical sorting (unsorted keys in nested object)
+resource "something" "this" {
+  template {
+    metadata {
+      annotations = {
+        "abc" = "yada-yada"
+        "def" = "blah-blah"
+      }
+    }
+  }
+}

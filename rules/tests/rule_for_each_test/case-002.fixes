@@ -1,0 +1,6 @@
+# Test: failing - for_each is not the top-most attribute
+resource "google_container_registry" "this" {
+  for_each = ["a", "b"]
+  project  = "foo"
+  location = each.key
+}

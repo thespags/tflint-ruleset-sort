@@ -1,0 +1,41 @@
+[
+    {
+        "Message": "1 redundant blank line between the braces",
+        "Range": {
+            "Start": {
+                "Line": 3,
+                "Column": 15
+            },
+            "End": {
+                "Line": 6,
+                "Column": 4
+            }
+        }
+    },
+    {
+        "Message": "1 redundant blank line between the braces",
+        "Range": {
+            "Start": {
+                "Line": 8,
+                "Column": 16
+            },
+            "End": {
+                "Line": 11,
+                "Column": 4
+            }
+        }
+    },
+    {
+        "Message": "1 redundant blank line between the braces",
+        "Range": {
+            "Start": {
+                "Line": 13,
+                "Column": 16
+            },
+            "End": {
+                "Line": 16,
+                "Column": 4
+            }
+        }
+    }
+]

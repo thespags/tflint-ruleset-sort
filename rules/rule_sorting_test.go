@@ -5,7 +5,6 @@ import (
 )
 
 func TestSortingRule(t *testing.T) {
-	runTests(t,
-		NewSortingRule(),
-	)
+	t.Parallel()
+	runTests(t, NewSortingRule())
 }

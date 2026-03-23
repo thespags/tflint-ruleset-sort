@@ -1,3 +1,4 @@
+# Test: redundant blank line before count attribute
 resource "kubernetes_config_map" "this" {
 
   count = var.create_map ? 1 : 0
@@ -11,15 +12,3 @@ resource "kubernetes_config_map" "this" {
     "foo" = "bar"
   }
 }
-
-### Expected Issues ###
-
-# [
-#     {
-#         "Message": "1 redundant blank line in front",
-#         "Range": {
-#             "Start": { "Line": 3, "Column": 3 },
-#             "End": { "Line": 3, "Column": 33 }
-#         }
-#     }
-# ]

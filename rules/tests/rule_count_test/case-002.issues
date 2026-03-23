@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "`count` must be the top-most attribute",
+        "Range": {
+            "Start": {
+                "Line": 7,
+                "Column": 3
+            },
+            "End": {
+                "Line": 7,
+                "Column": 13
+            }
+        }
+    }
+]

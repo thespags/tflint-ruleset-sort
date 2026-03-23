@@ -19,17 +19,17 @@ func NewCountRule() *CountRule {
 }
 
 // Name returns the name of the rule.
-func (r *CountRule) Name() string {
+func (*CountRule) Name() string {
 	return project.RuleName("count")
 }
 
 // Enabled returns whether the rule is enabled by default.
-func (r *CountRule) Enabled() bool {
+func (*CountRule) Enabled() bool {
 	return true
 }
 
 // Severity returns the severity of the rule.
-func (r *CountRule) Severity() tflint.Severity {
+func (*CountRule) Severity() tflint.Severity {
 	return tflint.ERROR
 }
 
@@ -38,26 +38,31 @@ func (r *CountRule) Link() string {
 	return project.ReferenceLink(r.Name())
 }
 
-// Check verifies whether `count` clause is placed on the top of the resource
+// Check verifies whether the `count` clause is placed on the top of the resource
 // definition.
 func (r *CountRule) Check(runner tflint.Runner) error {
-	return visit.Blocks(r, runner, func(b *hclsyntax.Block, _ []byte) error {
-		if b.Type != "resource" && b.Type != "data" {
+	return visit.Blocks(runner, func(block *hclsyntax.Block, src []byte) error {
+		if block.Type != "resource" && block.Type != "data" {
 			return nil
 		}
 
-		count, exists := b.Body.Attributes["count"]
+		count, exists := block.Body.Attributes["count"]
 		if !exists {
 			return nil
 		}
-		if node.FirstNodeFrom(b.Body).AsAttribute() == count {
+
+		first := node.FirstNodeFrom(block.Body)
+		if first.AsAttribute() == count {
 			return nil
 		}
 
-		return runner.EmitIssue(
+		return runner.EmitIssueWithFix(
 			r,
 			"`count` must be the top-most attribute",
 			count.SrcRange,
+			func(fixer tflint.Fixer) error {
+				return moveNodeBefore(fixer, src, count.SrcRange, first.Range())
+			},
 		)
 	})
 }

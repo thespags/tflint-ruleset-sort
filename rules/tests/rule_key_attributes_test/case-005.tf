@@ -1,3 +1,4 @@
+# Test: failing - namespace before name in deeply nested metadata
 resource "kubernetes_manifest" "qux" {
   manifest {
     apiVersion = "eek"
@@ -9,15 +10,3 @@ resource "kubernetes_manifest" "qux" {
     }
   }
 }
-
-### Expected Issues ###
-
-# [
-#     {
-#         "Message": "higher-priority key-attribute `namespace` should be defined before `name`",
-#         "Range": {
-#             "Start": { "Line": 8, "Column": 7 },
-#             "End": { "Line": 8, "Column": 24 }
-#         }
-#     }
-# ]

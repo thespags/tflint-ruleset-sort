@@ -5,7 +5,6 @@ import (
 )
 
 func TestLifecycleRule(t *testing.T) {
-	runTests(t,
-		NewLifecycleRule(),
-	)
+	t.Parallel()
+	runTests(t, NewLifecycleRule())
 }

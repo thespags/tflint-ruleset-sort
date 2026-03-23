@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "`(zzz, aaa)` should be reordered `(aaa, zzz)` (alphabetical sorting)",
+        "Range": {
+            "Start": {
+                "Line": 7,
+                "Column": 3
+            },
+            "End": {
+                "Line": 8,
+                "Column": 16
+            }
+        }
+    }
+]

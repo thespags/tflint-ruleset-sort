@@ -1,3 +1,4 @@
+# Test: passing - key attributes are in correct priority order
 resource "google_compute_subnetwork" "network-with-private-secondary-ip-ranges" {
   region        = "us-central1"
   name          = "test-subnetwork"

@@ -2,6 +2,7 @@ package rules
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/0x416e746f6e/tflint-ruleset-sheldon/custom"
@@ -11,6 +12,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
+	"github.com/zclconf/go-cty/cty"
 )
 
 type optSorting uint
@@ -34,17 +36,17 @@ func NewSortingRule() *SortingRule {
 }
 
 // Name returns the name of the rule.
-func (r *SortingRule) Name() string {
+func (*SortingRule) Name() string {
 	return project.RuleName("sorting")
 }
 
 // Enabled returns whether the rule is enabled by default.
-func (r *SortingRule) Enabled() bool {
+func (*SortingRule) Enabled() bool {
 	return true
 }
 
 // Severity returns the severity of the rule.
-func (r *SortingRule) Severity() tflint.Severity {
+func (*SortingRule) Severity() tflint.Severity {
 	return tflint.ERROR
 }
 
@@ -57,8 +59,8 @@ func (r *SortingRule) Link() string {
 func (r *SortingRule) Check(rr tflint.Runner) error {
 	switch runner := rr.(type) {
 	case *custom.Runner:
-		return visit.Files(r, runner, func(b *hclsyntax.Body, src []byte) error {
-			return r.checkNodes(runner, src, 0, node.OrderedInspectableNodesFrom(b))
+		return visit.Files(runner, func(b *hclsyntax.Body, src []byte) error {
+			return r.stepInto(runner, src, 0, node.OrderedInspectableNodesFrom(b))
 		})
 
 	default:
@@ -66,101 +68,15 @@ func (r *SortingRule) Check(rr tflint.Runner) error {
 	}
 }
 
-func (r *SortingRule) checkNodes(
+func (r *SortingRule) stepInto(
 	runner *custom.Runner,
 	src []byte,
 	level int,
 	nodes []node.InspectableNode,
 ) error {
-	for i := 1; i < len(nodes); i++ {
-		n := nodes[i]
-		p := nodes[i-1]
-
-		// Lint: single-line node should precede multi-line
-		if p.Lines() > 1 && n.Lines() == 1 {
-			if err := runner.EmitIssue(
-				r,
-				fmt.Sprintf(
-					"single-line node `%s` should precede multi-line `%s`",
-					n.Name(),
-					p.Name(),
-				),
-				n.Range(),
-			); err != nil {
-				return err
-			}
-		}
-
-		// Lint: attribute should precede block
-		if p.IsBlock() && n.IsAttribute() {
-			if err := runner.EmitIssue(
-				r,
-				fmt.Sprintf(
-					"attribute `%s` should precede block `%s`",
-					n.Name(),
-					p.Name(),
-				),
-				n.Range(),
-			); err != nil {
-				return err
-			}
-		}
-
-		if p.Kind() != n.Kind() {
-			continue
-		}
-
-		// Enforce sorting inside consecutive segments of single-line elements
-		if n.Range().Start.Line-p.Range().End.Line == 1 &&
-			p.Lines() == 1 &&
-			n.Lines() == 1 &&
-			n.Name() < p.Name() {
-			// ---
-			if err := runner.EmitIssue(
-				r,
-				fmt.Sprintf("%s `%s` should be placed after `%s` (alphabetical sorting)",
-					p.Type(),
-					p.Name(),
-					n.Name(),
-				),
-				p.Range(),
-			); err != nil {
-				return err
-			}
-		}
-
-		// Enforce sorting of multi-liners regardless of spacing between them
-		// (but only if there are no comments between them)
-		if level > 0 &&
-			p.Lines() > 1 &&
-			n.Lines() > 1 &&
-			n.Name() < p.Name() {
-			// ---
-			hasComments, err := r.hasCommentsInBetween(src, p, n)
-			if err != nil {
-				return err
-			}
-			if !hasComments {
-				if err := runner.EmitIssue(
-					r,
-					fmt.Sprintf(
-						"%s `%s` should be placed after `%s` (alphabetical sorting)",
-						p.Type(),
-						p.Name(),
-						n.Name(),
-					),
-					p.Range(),
-				); err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	// Step inside
 	for _, n := range nodes {
 		if a := n.AsAttribute(); a != nil {
-			if err := r.checkExpression(runner, level+1, a.Expr); err != nil {
+			if err := r.checkExpression(runner, level+1, src, a.Expr); err != nil {
 				return err
 			}
 		} else if b := n.AsBlock(); b != nil {
@@ -173,54 +89,176 @@ func (r *SortingRule) checkNodes(
 	return nil
 }
 
+func (r *SortingRule) checkNodes(
+	runner *custom.Runner,
+	src []byte,
+	level int,
+	nodes []node.InspectableNode,
+) error {
+	text := "single-line nodes `(%s)` should precede multi-lines `(%s)`"
+	if fixed, err := r.reorder(runner, src, nodes, singleLinesFirst, text); fixed || err != nil {
+		return err
+	}
+
+	text = "attributes `%s` should precede blocks `%s`"
+	if fixed, err := r.reorder(runner, src, nodes, attributesFirst, text); fixed || err != nil {
+		return err
+	}
+
+	if fixed, err := r.sortAlphabetically(runner, src, nodes); fixed || err != nil {
+		return err
+	}
+
+	return r.stepInto(runner, src, level, nodes)
+}
+
+func (r *SortingRule) sortAlphabetically(
+	runner *custom.Runner,
+	src []byte,
+	nodes []node.InspectableNode,
+) (bool, error) {
+	sorted := slices.Clone(nodes)
+	if len(sorted) < 2 {
+		return false, nil
+	}
+
+	start := 0
+
+	i := 1
+	for ; i < len(nodes); i++ {
+		left := nodes[i-1]
+		right := nodes[i]
+
+		var endGroup bool
+
+		if left.Lines() > 1 && right.Lines() > 1 {
+			// For multi-line nodes, we also split for comments... (legacy).
+			var err error
+
+			endGroup, err = hasCommentsInBetween(src, left, right)
+			if err != nil {
+				return false, err
+			}
+		} else {
+			// You can split single lines by new lines into separate groups.
+			endGroup = right.Range().Start.Line-left.Range().End.Line > 1
+		}
+		// We sort sections of the same lines, the same kind, or special cases above.
+		// If those don't match, then we sort the group of nodes and find the next group.
+		if endGroup || left.Kind() != right.Kind() {
+			slices.SortStableFunc(sorted[start:i], nameOrdered)
+			start = i
+
+			continue
+		}
+	}
+
+	slices.SortStableFunc(sorted[start:i], nameOrdered)
+
+	// If nothing changed, we don't emit an issue.
+	if slices.EqualFunc(nodes, sorted, func(a, b node.InspectableNode) bool {
+		return a == b
+	}) {
+		return false, nil
+	}
+
+	return true, runner.EmitIssueWithFix(
+		r,
+		fmt.Sprintf("`(%s)` should be reordered `(%s)` (alphabetical sorting)", toNames(nodes), toNames(sorted)),
+		sortedRange(nodes, sorted),
+		func(fixer tflint.Fixer) error {
+			return reorderNodes(fixer, src, nodes, sorted)
+		},
+	)
+}
+
+func (r *SortingRule) reorder(
+	runner *custom.Runner,
+	src []byte,
+	nodes []node.InspectableNode,
+	cmp func(a, b node.InspectableNode) int,
+	text string,
+) (bool, error) {
+	lasts := make([]node.InspectableNode, 0)
+	firsts := make([]node.InspectableNode, 0)
+
+	for i := 1; i < len(nodes); i++ {
+		left := nodes[i-1]
+		right := nodes[i]
+
+		if cmp(left, right) == 1 {
+			lasts = append(lasts, left)
+			firsts = append(firsts, right)
+		}
+	}
+
+	if len(lasts) == 0 {
+		return false, nil
+	}
+
+	span := hcl.RangeBetween(lasts[0].Range(), firsts[len(firsts)-1].Range())
+
+	sorted := slices.Clone(nodes)
+	slices.SortStableFunc(sorted, func(a, b node.InspectableNode) int {
+		if a.Lines() > 1 && b.Lines() == 1 {
+			return 1
+		}
+
+		return -1
+	})
+
+	return true, runner.EmitIssueWithFix(
+		r,
+		fmt.Sprintf(text, toNames(firsts), toNames(lasts)),
+		span,
+		func(fixer tflint.Fixer) error {
+			return reorderNodes(fixer, src, nodes, sorted)
+		},
+	)
+}
+
 func (r *SortingRule) checkBlock(
 	runner *custom.Runner,
 	src []byte,
 	level int,
-	b *hclsyntax.Block,
+	block *hclsyntax.Block,
 ) error {
-	nodes := node.OrderedInspectableNodesFrom(b.Body)
+	nodes := node.OrderedInspectableNodesFrom(block.Body)
 	if len(nodes) == 0 {
 		return nil
 	}
 
 	if level == 1 {
 		// Top-level `locals` block: just check the expressions and exit
-		if b.Type == "locals" {
+		if block.Type == "locals" {
 			for _, _n := range nodes {
 				if _a := _n.AsAttribute(); _a != nil {
-					if err := r.checkExpression(runner, level+1, _a.Expr, dontSortMultiliners); err != nil {
+					if err := r.checkExpression(runner, level+1, src, _a.Expr, dontSortMultiliners); err != nil {
 						return err
 					}
 				}
 			}
+
 			return nil
 		}
 
 		// Top-level `resource` or `data` block
-		if b.Type == "resource" || b.Type == "data" {
+		if block.Type == "resource" || block.Type == "data" {
 			var err error
-			nodes, err = r.preprocessResourceOrData(runner, src, level, b.Labels[0], nodes)
+
+			nodes, err = r.preprocessResourceOrData(runner, src, level, block.Labels[0], nodes)
 			if err != nil {
 				return err
 			}
 		}
 
 		// Top-level `module` block
-		if b.Type == "module" {
-			var err error
-			nodes, err = r.preprocessModule(runner, level, b.Labels[0], nodes)
-			if err != nil {
-				return err
-			}
+		if block.Type == "module" {
+			nodes = r.preprocessModule(runner, block.Body, nodes)
 		}
 	}
 
-	if err := r.checkNodes(runner, src, level+1, nodes); err != nil {
-		return err
-	}
-
-	return nil
+	return r.checkNodes(runner, src, level+1, nodes)
 }
 
 func (r *SortingRule) preprocessResourceOrData(
@@ -235,6 +273,7 @@ func (r *SortingRule) preprocessResourceOrData(
 		if a := nodes[0].AsAttribute(); a != nil && a.Name == "for_each" {
 			nodes = nodes[1:]
 		}
+
 		if len(nodes) == 0 {
 			return nodes, nil
 		}
@@ -245,6 +284,7 @@ func (r *SortingRule) preprocessResourceOrData(
 		if a := nodes[0].AsAttribute(); a != nil && a.Name == "count" {
 			nodes = nodes[1:]
 		}
+
 		if len(nodes) == 0 {
 			return nodes, nil
 		}
@@ -255,6 +295,7 @@ func (r *SortingRule) preprocessResourceOrData(
 		if a := nodes[len(nodes)-1].AsAttribute(); a != nil && a.Name == "depends_on" {
 			nodes = nodes[:len(nodes)-1]
 		}
+
 		if len(nodes) == 0 {
 			return nodes, nil
 		}
@@ -265,6 +306,7 @@ func (r *SortingRule) preprocessResourceOrData(
 		if b := nodes[len(nodes)-1].AsBlock(); b != nil && b.Type == "lifecycle" {
 			nodes = nodes[:len(nodes)-1]
 		}
+
 		if len(nodes) == 0 {
 			return nodes, nil
 		}
@@ -277,39 +319,43 @@ func (r *SortingRule) preprocessResourceOrData(
 		if !ok {
 			return nodes, nil
 		}
+
 		if len(resource.KeyAttributes) == 0 {
 			return nodes, nil
 		}
 
-		// TODO: Allow for nested key attrs (e.g. `kubernetes_manifest.manifest.metadata.*`)
-
 		// Drop key-attributes
 		if level > len(resource.KeyBlocks) {
-			for _, ka := range resource.KeyAttributes {
+			for _, key := range resource.KeyAttributes {
 				if len(nodes) == 0 {
 					break
 				}
+
 				if a := nodes[0].AsAttribute(); a != nil {
-					if a.Name == ka {
+					if a.Name == key {
 						nodes = nodes[1:] // Drop
 					}
 				}
 			}
+
 			return nodes, nil
 		}
 
-		// Drop the key block, but inspect its contents
+		// Drop the key block but inspect its contents
+		// KeyBlocks are the mapping of prefix, so manifest.metadata -> ["manifest", "metadata"]
+		// And, we're only allowed one set of KeyBlocks.
 		if kb := nodes[0].AsBlock(); kb != nil && kb.Type == resource.KeyBlocks[level-1] {
 			nodes = nodes[1:] // Drop
 			knodes := node.OrderedInspectableNodesFrom(kb.Body)
 			// Drop leading key attributes inside the key block
 			if len(resource.KeyBlocks) == level {
-				for _, ka := range resource.KeyAttributes {
+				for _, key := range resource.KeyAttributes {
 					if len(knodes) == 0 {
 						break
 					}
+
 					if a := knodes[0].AsAttribute(); a != nil {
-						if a.Name == ka {
+						if a.Name == key {
 							knodes = knodes[1:] // Drop
 						}
 					}
@@ -325,43 +371,71 @@ func (r *SortingRule) preprocessResourceOrData(
 	return nodes, nil
 }
 
-func (r *SortingRule) preprocessModule(
+func (*SortingRule) preprocessModule(
 	runner *custom.Runner,
-	level int,
-	kind string,
+	body *hclsyntax.Body,
 	nodes []node.InspectableNode,
-) ([]node.InspectableNode, error) {
+) []node.InspectableNode {
 	// Drop leading `source`
 	if disabled, exists := runner.Disabled["source"]; !exists || !disabled {
-		if a := nodes[0].AsAttribute(); a != nil && a.Name == "source" {
-			nodes = nodes[1:]
+		if len(nodes) > 0 {
+			if a := nodes[0].AsAttribute(); a != nil && a.Name == "source" {
+				nodes = nodes[1:]
+			}
+		}
+
+		if len(nodes) == 0 {
+			return nodes
 		}
 	}
-	return nodes, nil
+
+	// Drop key-attributes for modules (keyed by source value)
+	if disabled, exists := runner.Disabled["key_attributes"]; !exists || !disabled {
+		source, exists := body.Attributes["source"]
+		if exists {
+			val, diags := source.Expr.Value(nil)
+			if !diags.HasErrors() && val.Type() == cty.String {
+				if module, ok := runner.Modules[val.AsString()]; ok {
+					for _, key := range module.KeyAttributes {
+						if len(nodes) == 0 {
+							break
+						}
+
+						if a := nodes[0].AsAttribute(); a != nil && a.Name == key {
+							nodes = nodes[1:]
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return nodes
 }
 
 func (r *SortingRule) checkExpression(
 	runner *custom.Runner,
 	level int,
+	src []byte,
 	expression hclsyntax.Expression,
 	opts ...optSorting,
 ) error {
 	var opt optSorting
 	for _, o := range opts {
-		opt = opt | o
+		opt |= o
 	}
 
-	switch x := expression.(type) {
+	switch expr := expression.(type) {
 	case *hclsyntax.ForExpr:
-		return r.checkForExpr(runner, level, x, opt)
+		return r.checkForExpr(runner, level, src, expr, opt)
 	case *hclsyntax.FunctionCallExpr:
-		return r.checkFunctionCallExpr(runner, level, x, opt)
+		return r.checkFunctionCallExpr(runner, level, src, expr, opt)
 	case *hclsyntax.ObjectConsExpr:
-		return r.checkObjectConsExpr(runner, level, x, opt)
+		return r.checkObjectConsExpr(runner, level, src, expr, opt)
 	case *hclsyntax.ParenthesesExpr:
-		return r.checkParenthesesExpr(runner, level, x, opt)
+		return r.checkParenthesesExpr(runner, level, src, expr, opt)
 	case *hclsyntax.TupleConsExpr:
-		return r.checkTupleConsExpr(runner, level, x, opt)
+		return r.checkTupleConsExpr(runner, level, src, expr, opt)
 	default:
 		return nil
 	}
@@ -370,22 +444,24 @@ func (r *SortingRule) checkExpression(
 func (r *SortingRule) checkForExpr(
 	runner *custom.Runner,
 	level int,
+	src []byte,
 	x *hclsyntax.ForExpr,
 	opt optSorting,
 ) error {
 	// Step inside
-	return r.checkExpression(runner, level+1, x.ValExpr, opt)
+	return r.checkExpression(runner, level+1, src, x.ValExpr, opt)
 }
 
 func (r *SortingRule) checkFunctionCallExpr(
 	runner *custom.Runner,
 	level int,
-	x *hclsyntax.FunctionCallExpr,
+	src []byte,
+	exor *hclsyntax.FunctionCallExpr,
 	opt optSorting,
 ) error {
 	// Step inside
-	for _, e := range x.Args {
-		if err := r.checkExpression(runner, level+1, e, opt); err != nil {
+	for _, e := range exor.Args {
+		if err := r.checkExpression(runner, level+1, src, e, opt); err != nil {
 			return err
 		}
 	}
@@ -396,57 +472,73 @@ func (r *SortingRule) checkFunctionCallExpr(
 func (r *SortingRule) checkObjectConsExpr(
 	runner *custom.Runner,
 	level int,
-	x *hclsyntax.ObjectConsExpr,
+	src []byte,
+	expr *hclsyntax.ObjectConsExpr,
 	opt optSorting,
 ) error {
-	for i := 1; i < len(x.Items); i++ {
-		e := x.Items[i]
-		p := x.Items[i-1]
+	for i := 1; i < len(expr.Items); i++ {
+		curX := expr.Items[i]
+		prevX := expr.Items[i-1]
 
-		el := e.ValueExpr.Range().End.Line - e.KeyExpr.Range().Start.Line
-		pl := p.ValueExpr.Range().End.Line - p.KeyExpr.Range().Start.Line
+		curLines := curX.ValueExpr.Range().End.Line - curX.KeyExpr.Range().Start.Line
+		prevLines := prevX.ValueExpr.Range().End.Line - prevX.KeyExpr.Range().Start.Line
 
-		ek := strings.ToLower(node.WrapObjectConsItem(&e).Name())
-		pk := strings.ToLower(node.WrapObjectConsItem(&p).Name())
+		curKey := strings.ToLower(node.WrapObjectConsItem(&curX).Name())
+		prevKey := strings.ToLower(node.WrapObjectConsItem(&prevX).Name())
 
-		if pl > 0 && el == 0 {
-			if err := runner.EmitIssue(
+		if prevLines > 0 && curLines == 0 {
+			prevRange := node.WrapObjectConsItem(&prevX).Range()
+			curRange := node.WrapObjectConsItem(&curX).Range()
+
+			if err := runner.EmitIssueWithFix(
 				r,
 				"single-line key/value pair should be placed before multi-line",
-				e.KeyExpr.Range(),
+				curX.KeyExpr.Range(),
+				func(fixer tflint.Fixer) error {
+					return swapAdjacentNodes(fixer, src, prevRange, curRange)
+				},
 			); err != nil {
 				return err
 			}
 		}
 
-		if pl == 0 && el == 0 &&
-			e.KeyExpr.Range().Start.Line-p.ValueExpr.Range().End.Line == 1 &&
-			ek < pk {
-			// ---
-			if err := runner.EmitIssue(
+		if prevLines == 0 && curLines == 0 &&
+			curX.KeyExpr.Range().Start.Line-prevX.ValueExpr.Range().End.Line == 1 &&
+			curKey < prevKey {
+			prevRange := node.WrapObjectConsItem(&prevX).Range()
+			curRange := node.WrapObjectConsItem(&curX).Range()
+
+			if err := runner.EmitIssueWithFix(
 				r,
 				fmt.Sprintf(
 					"key `%s` is out of order (should not follow alphabetically greater `%s`)",
-					ek,
-					pk,
+					curKey,
+					prevKey,
 				),
-				e.KeyExpr.Range(),
+				curX.KeyExpr.Range(),
+				func(fixer tflint.Fixer) error {
+					return swapAdjacentNodes(fixer, src, prevRange, curRange)
+				},
 			); err != nil {
 				return err
 			}
 		}
 
-		if pl > 0 && el > 0 && !opt.dontSortMultiliners() &&
-			ek < pk {
-			// ---
-			if err := runner.EmitIssue(
+		if prevLines > 0 && curLines > 0 && !opt.dontSortMultiliners() && curKey < prevKey {
+			prevRange := node.WrapObjectConsItem(&prevX).Range()
+			curRange := node.WrapObjectConsItem(&curX).Range()
+
+			if err := runner.EmitIssueWithFix(
 				r,
 				fmt.Sprintf(
 					"key `%s` is out of order (should not follow alphabetically greater `%s`)",
-					ek,
-					pk,
+					curKey,
+					prevKey,
 				),
-				e.KeyExpr.Range(),
+				curX.KeyExpr.Range(),
+				func(fixer tflint.Fixer) error {
+					return swapAdjacentNodes(fixer, src, prevRange, curRange)
+				},
 			); err != nil {
 				return err
 			}
@@ -454,8 +546,8 @@ func (r *SortingRule) checkObjectConsExpr(
 	}
 
 	// Step inside
-	for _, e := range x.Items {
-		if err := r.checkExpression(runner, level+1, e.ValueExpr, opt); err != nil {
+	for _, e := range expr.Items {
+		if err := r.checkExpression(runner, level+1, src, e.ValueExpr, opt); err != nil {
 			return err
 		}
 	}
@@ -466,62 +558,27 @@ func (r *SortingRule) checkObjectConsExpr(
 func (r *SortingRule) checkTupleConsExpr(
 	runner *custom.Runner,
 	level int,
+	src []byte,
 	x *hclsyntax.TupleConsExpr,
 	opt optSorting,
 ) error {
 	// Step inside
 	for _, e := range x.Exprs {
-		if err := r.checkExpression(runner, level+1, e, opt); err != nil {
+		if err := r.checkExpression(runner, level+1, src, e, opt); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
 func (r *SortingRule) checkParenthesesExpr(
 	runner *custom.Runner,
 	level int,
+	src []byte,
 	x *hclsyntax.ParenthesesExpr,
 	opt optSorting,
 ) error {
 	// Step inside
-	return r.checkExpression(runner, level+1, x.Expression, opt)
-}
-
-func (r *SortingRule) hasCommentsInBetween(
-	src []byte,
-	p node.Node,
-	n node.Node,
-) (bool, error) {
-	rng := hcl.Range{
-		Filename: n.Range().Filename,
-		Start: hcl.Pos{
-			Line:   p.Range().End.Line,
-			Column: p.Range().End.Column,
-			Byte:   p.Range().End.Byte,
-		},
-		End: hcl.Pos{
-			Line:   n.Range().Start.Line,
-			Column: n.Range().Start.Column,
-			Byte:   n.Range().Start.Byte,
-		},
-	}
-
-	tokens, err := hclsyntax.LexConfig(
-		src[rng.Start.Byte:rng.End.Byte],
-		rng.Filename,
-		rng.Start,
-	)
-	if err != nil {
-		return false, err
-	}
-
-	for _, t := range tokens {
-		switch t.Type {
-		case hclsyntax.TokenComment:
-			return true, nil
-		}
-	}
-
-	return false, nil
+	return r.checkExpression(runner, level+1, src, x.Expression, opt)
 }

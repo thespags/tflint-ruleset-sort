@@ -1,3 +1,4 @@
+# Test: Correctly ordered resource, no issues
 resource "google_storage_bucket" "cloudbuild" {
   for_each = local.cfg.gcp.cloudbuild
 

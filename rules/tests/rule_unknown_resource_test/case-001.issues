@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "key-attributes for resource type `acme_widget` are not configured",
+        "Range": {
+            "Start": {
+                "Line": 2,
+                "Column": 10
+            },
+            "End": {
+                "Line": 2,
+                "Column": 23
+            }
+        }
+    }
+]

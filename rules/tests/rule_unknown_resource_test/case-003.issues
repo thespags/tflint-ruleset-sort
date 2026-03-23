@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "key-attributes for resource type `gamma_lookup` are not configured",
+        "Range": {
+            "Start": {
+                "Line": 2,
+                "Column": 6
+            },
+            "End": {
+                "Line": 2,
+                "Column": 20
+            }
+        }
+    }
+]

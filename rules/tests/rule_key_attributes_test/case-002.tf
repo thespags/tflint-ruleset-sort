@@ -1,3 +1,4 @@
+# Test: failing - region should be defined before name
 resource "google_compute_subnetwork" "network-with-private-secondary-ip-ranges" {
   name          = "test-subnetwork"
   ip_cidr_range = "10.2.0.0/16"
@@ -8,15 +9,3 @@ resource "google_compute_subnetwork" "network-with-private-secondary-ip-ranges" 
     ip_cidr_range = "192.168.10.0/24"
   }
 }
-
-### Expected Issues ###
-
-# [
-#     {
-#         "Message": "higher-priority key-attribute `region` should be defined before `name`",
-#         "Range": {
-#             "Start": { "Line": 4, "Column": 3 },
-#             "End": { "Line": 4, "Column": 32 }
-#         }
-#     }
-# ]
