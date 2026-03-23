@@ -4,6 +4,7 @@ go 1.26.1
 
 require (
 	github.com/hashicorp/hcl/v2 v2.24.0
+	github.com/stretchr/testify v1.11.0
 	github.com/terraform-linters/tflint-plugin-sdk v0.24.0
 )
 
@@ -24,7 +25,6 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/oklog/run v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/stretchr/testify v1.10.0
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/zclconf/go-cty v1.18.0
