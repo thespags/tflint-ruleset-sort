@@ -1,6 +1,6 @@
 [
     {
-        "Message": "key-attributes for resource type `zeta_mod_a` are not configured",
+        "Message": "key-attributes for module source `./modules/a` are not configured",
         "Range": {
             "Start": {
                 "Line": 2,
@@ -13,7 +13,7 @@
         }
     },
     {
-        "Message": "key-attributes for resource type `zeta_mod_b` are not configured",
+        "Message": "key-attributes for module source `./modules/b` are not configured",
         "Range": {
             "Start": {
                 "Line": 6,

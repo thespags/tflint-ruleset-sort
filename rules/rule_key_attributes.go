@@ -9,7 +9,6 @@ import (
 	"github.com/thespags/tflint-ruleset-sort/node"
 	"github.com/thespags/tflint-ruleset-sort/project"
 	"github.com/thespags/tflint-ruleset-sort/visit"
-	"github.com/zclconf/go-cty/cty"
 )
 
 // KeyAttributesRule makes sure that key-attributes (those that uniquely
@@ -85,17 +84,7 @@ func (r *KeyAttributesRule) checkModule(
 	src []byte,
 ) error {
 	// Determine the module source to look up key attributes.
-	source, exists := block.Body.Attributes["source"]
-	if !exists {
-		return nil
-	}
-
-	val, diags := source.Expr.Value(nil)
-	if diags.HasErrors() || val.Type() != cty.String {
-		return nil // Can't evaluate source statically
-	}
-
-	sourceStr := val.AsString()
+	sourceStr := getSource(block)
 
 	module, known := runner.Modules[sourceStr]
 	if !known || len(module.KeyAttributes) == 0 {

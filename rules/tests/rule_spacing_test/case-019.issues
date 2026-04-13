@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "key-attribute `name` must not be separated from `source` or other key-attributes",
+        "Range": {
+            "Start": {
+                "Line": 4,
+                "Column": 3
+            },
+            "End": {
+                "Line": 4,
+                "Column": 18
+            }
+        }
+    }
+]
