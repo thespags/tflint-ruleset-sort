@@ -60,7 +60,7 @@ func (r *UnknownResourceRule) Check(rr tflint.Runner) error {
 			}
 
 			if block.Type == "module" {
-				return r.checkBlock(runner, runner.Modules, block)
+				return r.checkModule(runner, block)
 			}
 
 			return nil
@@ -93,6 +93,34 @@ func (r *UnknownResourceRule) checkBlock(
 		return runner.EmitIssue(
 			r,
 			fmt.Sprintf("key-attributes for resource type `%s` are not configured", kind),
+			block.LabelRanges[0],
+		)
+	}
+
+	return nil
+}
+
+func (r *UnknownResourceRule) checkModule(
+	runner *custom.Runner,
+	block *hclsyntax.Block,
+) error {
+	sourceStr := getSource(block)
+	if _, known := runner.Modules[sourceStr]; known {
+		return nil
+	}
+
+	r.mu.Lock()
+
+	_, seen := r.seenModules[sourceStr]
+	if !seen {
+		r.seenModules[sourceStr] = struct{}{}
+	}
+	r.mu.Unlock()
+
+	if !seen {
+		return runner.EmitIssue(
+			r,
+			fmt.Sprintf("key-attributes for module source `%s` are not configured", sourceStr),
 			block.LabelRanges[0],
 		)
 	}

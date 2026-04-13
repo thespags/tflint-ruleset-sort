@@ -13,9 +13,10 @@ import (
 )
 
 const (
-	separateAttribute  = "attribute `%s` must be separated from the rest of the definition by an extra line"
-	separateMultiLine  = "multi-line element must be separated from the previous one by an extra line"
-	separateSingleLine = "single-line element must be separated from the preceding multi-line one by an extra line"
+	separateAttribute      = "attribute `%s` must be separated from the rest of the definition by an extra line"
+	noSeparateKeyAttribute = "key-attribute `%s` must not be separated from `source` or other key-attributes"
+	separateMultiLine      = "multi-line element must be separated from the previous one by an extra line"
+	separateSingleLine     = "single-line element must be separated from the preceding multi-line one by an extra line"
 )
 
 // SpacingRule makes sure that there is consistent spacing between attributes
@@ -189,25 +190,27 @@ func (r *SpacingRule) checkBlock(
 				nodes = nodes[:end]
 			}
 		}
+
+		// Check key-attribute spacing for resources/data
+		if len(nodes) > 1 {
+			kind := block.Labels[0]
+
+			var err error
+
+			nodes, err = r.checkKeyAttributeSpacing(runner, src, nodes, keyAttrSet(runner.Resources, kind))
+			if len(nodes) == 0 || err != nil {
+				return err
+			}
+		}
 	}
 
-	// Check special treatment of `source`
+	// Check special treatment of `source` and key-attributes for modules
 	if level == 1 && len(nodes) > 1 && block.Type == "module" {
-		check := func(left, _ node.InspectableNode) (bool, string, hcl.Range) {
-			a := left.AsAttribute()
+		var err error
 
-			return a != nil && a.Name == "source",
-				fmt.Sprintf(separateAttribute, left.Name()),
-				left.Range()
-		}
-
-		emitted, err := r.requireLineBetween(runner, src, check, nodes[0], nodes[1])
-		if err != nil {
+		nodes, err = r.checkModuleSpacing(runner, block, src, nodes)
+		if len(nodes) == 0 || err != nil {
 			return err
-		}
-
-		if emitted {
-			nodes = nodes[1:]
 		}
 	}
 
@@ -713,4 +716,128 @@ func (r *SpacingRule) requireLineBetween(
 	}
 
 	return false, nil
+}
+
+// checkModuleSpacing handles spacing for module blocks. When a module has
+// key-attributes configured, source and key-attributes are grouped together
+// (no blank line), with a blank line separating them from the rest. When no
+// key-attributes are configured, a blank line is required after the source.
+func (r *SpacingRule) checkModuleSpacing(
+	runner *custom.Runner,
+	block *hclsyntax.Block,
+	src []byte,
+	nodes []node.InspectableNode,
+) ([]node.InspectableNode, error) {
+	sourceStr := getSource(block)
+	keys := keyAttrSet(runner.Modules, sourceStr)
+
+	// Key attributes are configured: group source + key-attributes together.
+	keys["source"] = true
+
+	return r.checkKeyAttributeSpacing(runner, src, nodes, keys)
+}
+
+// checkKeyAttributeSpacing enforces no blank lines between consecutive
+// key-attributes and a blank line separating them from the remaining attributes.
+// When trim is true, processed key-attribute nodes are removed from the returned
+// slice (safe when they form a contiguous prefix, e.g. modules). When false,
+// nodes are returned as-is (for resources where key-attrs may follow count/for_each).
+func (r *SpacingRule) checkKeyAttributeSpacing(
+	runner *custom.Runner,
+	src []byte,
+	nodes []node.InspectableNode,
+	keyAttrSet map[string]bool,
+) ([]node.InspectableNode, error) {
+	if disabled, exists := runner.Disabled["separate_key_attributes"]; exists && disabled {
+		return nodes, nil
+	}
+
+	if len(keyAttrSet) == 0 || len(nodes) < 2 {
+		return nodes, nil
+	}
+
+	// Find the first key-attribute.
+	start := 0
+	for start < len(nodes) {
+		a := nodes[start].AsAttribute()
+		if a != nil && keyAttrSet[a.Name] {
+			break
+		}
+
+		start++
+	}
+
+	if start >= len(nodes) {
+		return nodes, nil
+	}
+
+	// Walk over consecutive key-attributes, forbidding blank lines between them.
+	// Only emit one issue per pass to avoid overlapping fix ranges.
+	prev := nodes[start]
+	i := start + 1
+	emittedForbid := false
+
+	for i < len(nodes) {
+		cur := nodes[i]
+
+		attribute := cur.AsAttribute()
+		if attribute == nil || !keyAttrSet[attribute.Name] {
+			break
+		}
+
+		ok, err := r.forbidLineBetween(runner, src, prev, cur, fmt.Sprintf(noSeparateKeyAttribute, attribute.Name))
+		if err != nil {
+			return nodes[i:], err
+		}
+
+		if ok {
+			emittedForbid = true
+		}
+
+		prev = cur
+		i++
+	}
+
+	// Require a blank line after the last key-attribute before the remaining
+	// attributes. Skip if we already emitted a forbid fix to avoid
+	// overlapping rewrite ranges.
+	if !emittedForbid && i < len(nodes) {
+		check := func(left, _ node.InspectableNode) (bool, string, hcl.Range) {
+			return true, fmt.Sprintf(separateAttribute, left.Name()), left.Range()
+		}
+
+		if _, err := r.requireLineBetween(runner, src, check, nodes[i-1], nodes[i]); err != nil {
+			return nodes, err
+		}
+	}
+
+	return nodes[i:], nil
+}
+
+// forbidLineBetween emits an issue and fix when there is a blank line between
+// two nodes that should be adjacent. Returns true if an issue was emitted.
+func (r *SpacingRule) forbidLineBetween(
+	runner *custom.Runner,
+	src []byte,
+	left, right node.InspectableNode,
+	msg string,
+) (bool, error) {
+	lines := right.Range().Start.Line - left.Range().End.Line
+	if lines <= 1 {
+		return false, nil
+	}
+
+	excess := lines - 1
+	betweenRegion := hcl.Range{
+		Filename: left.Range().Filename,
+		Start:    left.Range().End,
+		End:      right.Range().Start,
+	}
+	err := runner.EmitIssueWithFix(r, msg, right.Range(),
+		func(fixer tflint.Fixer) error {
+			return removeBlankLinesInRegion(fixer, src, betweenRegion, excess)
+		},
+	)
+
+	return true, err
 }

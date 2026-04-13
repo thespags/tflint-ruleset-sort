@@ -5,6 +5,9 @@ Normalises blank-lines in the sources.
 - No multiple consecutive blank-lines.
 - No unnecessary single blank-lines.
 - Comments are ignored.
+- When key-attributes are configured, they are grouped together without blank lines,
+  with a blank line separating them from the remaining attributes. This applies to
+  both resources/data blocks and modules (where `source` is included in the group).
 
 ## Example
 
@@ -42,3 +45,22 @@ Error: 1 redundant empty line in front (sort_spacing)
   on case-008.tf line 12:
   12: }
 ```
+
+## Key-attribute grouping
+
+When a resource or module has key-attributes configured, they are grouped with
+no blank lines between them, and a blank line is required after the last
+key-attribute before the remaining attributes.
+
+```hcl
+module "vpc" {
+  source = "terraform-aws-modules/vpc/aws"
+  name   = "my-vpc"
+  cidr   = "10.0.0.0/16"
+
+  other = "value"
+}
+```
+
+This behavior can be disabled by setting `separate_key_attributes` to `false`
+in the `Disabled` configuration of the runner.
