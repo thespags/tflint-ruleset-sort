@@ -21,7 +21,7 @@ import (
 	"github.com/thespags/tflint-ruleset-sort/custom"
 )
 
-func runTests(t *testing.T, rule tflint.Rule) {
+func runTests(t *testing.T, rules ...tflint.Rule) {
 	t.Helper()
 
 	_, testFilename, _, ok := runtime.Caller(1)
@@ -49,7 +49,6 @@ func runTests(t *testing.T, rule tflint.Rule) {
 		}
 
 		terraform := readTerraform(t, tfFilename)
-		expectedIssues := readIssues(t, rule, tfFilename)
 		expectedFixes := readFixes(t, tfFilename)
 
 		helperRunner := helper.TestRunner(
@@ -62,9 +61,17 @@ func runTests(t *testing.T, rule tflint.Rule) {
 		t.Run(filepath.Base(tfFilename), func(t *testing.T) {
 			t.Parallel()
 
-			err = rule.Check(runner)
-			require.NoError(t, err)
-			helper.AssertIssues(t, expectedIssues, helperRunner.Issues)
+			for _, rule := range rules {
+				err = rule.Check(runner)
+				require.NoError(t, err)
+			}
+
+			// For now only single rule tests can have issues.
+			if len(rules) == 1 {
+				expectedIssues := readIssues(t, rules[0], tfFilename)
+				helper.AssertIssues(t, expectedIssues, helperRunner.Issues)
+			}
+
 			helper.AssertChanges(t, expectedFixes, helperRunner.Changes())
 		})
 

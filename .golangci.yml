@@ -17,7 +17,7 @@ formatters:
       sections:
         - standard
         - default
-        - prefix(gitlab.com/crusoeenergy)
+        - prefix(gitlab.com/crusoeenergy)lets
     goimports:
       local-prefixes:
         - gitlab.com/crusoeenergy

@@ -1,0 +1,9 @@
+module "foo" {
+  source = "./bar"
+
+  zzz = "single"
+  aaa = [
+    "item1",
+    "item2",
+  ]
+}

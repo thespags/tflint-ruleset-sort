@@ -145,7 +145,7 @@ func (r *SortingRule) sortAlphabetically(
 		}
 		// We sort sections of the same lines, the same kind, or special cases above.
 		// If those don't match, then we sort the group of nodes and find the next group.
-		if endGroup || left.Kind() != right.Kind() {
+		if endGroup || left.Kind() != right.Kind() || (left.Lines() > 1) != (right.Lines() > 1) {
 			slices.SortStableFunc(sorted[start:i], nameOrdered)
 			start = i
 
