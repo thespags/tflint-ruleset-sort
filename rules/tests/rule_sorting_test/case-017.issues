@@ -1,14 +1,14 @@
 [
     {
-        "Message": "key `aaa` is out of order (should not follow alphabetically greater `bbb`)",
+        "Message": "`(bbb, aaa)` should be reordered `(aaa, bbb)` (alphabetical sorting)",
         "Range": {
             "Start": {
-                "Line": 9,
+                "Line": 8,
                 "Column": 7
             },
             "End": {
                 "Line": 9,
-                "Column": 12
+                "Column": 20
             }
         }
     }

@@ -39,6 +39,9 @@ type InspectableNode interface {
 
 	// Type returns a string label for the node kind (e.g. "attribute", "block").
 	Type() string
+
+	// Expr returns the expression to recurse into, or nil.
+	Expr() hclsyntax.Expression
 }
 
 // Kind indicates the kind of a node (e.g. attribute, or block, or expression,

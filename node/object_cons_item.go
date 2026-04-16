@@ -102,6 +102,11 @@ func (i objectConsItem) Name() string {
 	return strings.Join(names, ".")
 }
 
+// Expr returns the value expression of the object item.
+func (i objectConsItem) Expr() hclsyntax.Expression {
+	return i.item.ValueExpr
+}
+
 // Lines returns the number of lines the object item spans.
 func (i objectConsItem) Lines() int {
 	r := i.Range()

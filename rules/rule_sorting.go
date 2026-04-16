@@ -3,7 +3,6 @@ package rules
 import (
 	"fmt"
 	"slices"
-	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -75,8 +74,8 @@ func (r *SortingRule) stepInto(
 	nodes []node.InspectableNode,
 ) error {
 	for _, n := range nodes {
-		if a := n.AsAttribute(); a != nil {
-			if err := r.checkExpression(runner, level+1, src, a.Expr); err != nil {
+		if expr := n.Expr(); expr != nil {
+			if err := r.checkExpression(runner, level+1, src, expr); err != nil {
 				return err
 			}
 		} else if b := n.AsBlock(); b != nil {
@@ -361,7 +360,6 @@ func (r *SortingRule) preprocessResourceOrData(
 					}
 				}
 			}
-			// Step inside
 			if err := r.checkNodes(runner, src, level+1, knodes); err != nil {
 				return nil, err
 			}
@@ -448,7 +446,6 @@ func (r *SortingRule) checkForExpr(
 	x *hclsyntax.ForExpr,
 	opt optSorting,
 ) error {
-	// Step inside
 	return r.checkExpression(runner, level+1, src, x.ValExpr, opt)
 }
 
@@ -456,11 +453,10 @@ func (r *SortingRule) checkFunctionCallExpr(
 	runner *custom.Runner,
 	level int,
 	src []byte,
-	exor *hclsyntax.FunctionCallExpr,
+	expr *hclsyntax.FunctionCallExpr,
 	opt optSorting,
 ) error {
-	// Step inside
-	for _, e := range exor.Args {
+	for _, e := range expr.Args {
 		if err := r.checkExpression(runner, level+1, src, e, opt); err != nil {
 			return err
 		}
@@ -476,83 +472,14 @@ func (r *SortingRule) checkObjectConsExpr(
 	expr *hclsyntax.ObjectConsExpr,
 	opt optSorting,
 ) error {
-	for i := 1; i < len(expr.Items); i++ {
-		curX := expr.Items[i]
-		prevX := expr.Items[i-1]
+	items := expr.Items
 
-		curLines := curX.ValueExpr.Range().End.Line - curX.KeyExpr.Range().Start.Line
-		prevLines := prevX.ValueExpr.Range().End.Line - prevX.KeyExpr.Range().Start.Line
-
-		curKey := strings.ToLower(node.WrapObjectConsItem(&curX).Name())
-		prevKey := strings.ToLower(node.WrapObjectConsItem(&prevX).Name())
-
-		if prevLines > 0 && curLines == 0 {
-			prevRange := node.WrapObjectConsItem(&prevX).Range()
-			curRange := node.WrapObjectConsItem(&curX).Range()
-
-			if err := runner.EmitIssueWithFix(
-				r,
-				"single-line key/value pair should be placed before multi-line",
-				curX.KeyExpr.Range(),
-				func(fixer tflint.Fixer) error {
-					return swapAdjacentNodes(fixer, src, prevRange, curRange)
-				},
-			); err != nil {
-				return err
-			}
-		}
-
-		if prevLines == 0 && curLines == 0 &&
-			curX.KeyExpr.Range().Start.Line-prevX.ValueExpr.Range().End.Line == 1 &&
-			curKey < prevKey {
-			prevRange := node.WrapObjectConsItem(&prevX).Range()
-			curRange := node.WrapObjectConsItem(&curX).Range()
-
-			if err := runner.EmitIssueWithFix(
-				r,
-				fmt.Sprintf(
-					"key `%s` is out of order (should not follow alphabetically greater `%s`)",
-					curKey,
-					prevKey,
-				),
-				curX.KeyExpr.Range(),
-				func(fixer tflint.Fixer) error {
-					return swapAdjacentNodes(fixer, src, prevRange, curRange)
-				},
-			); err != nil {
-				return err
-			}
-		}
-
-		if prevLines > 0 && curLines > 0 && !opt.dontSortMultiliners() && curKey < prevKey {
-			prevRange := node.WrapObjectConsItem(&prevX).Range()
-			curRange := node.WrapObjectConsItem(&curX).Range()
-
-			if err := runner.EmitIssueWithFix(
-				r,
-				fmt.Sprintf(
-					"key `%s` is out of order (should not follow alphabetically greater `%s`)",
-					curKey,
-					prevKey,
-				),
-				curX.KeyExpr.Range(),
-				func(fixer tflint.Fixer) error {
-					return swapAdjacentNodes(fixer, src, prevRange, curRange)
-				},
-			); err != nil {
-				return err
-			}
-		}
+	// Wrap items as InspectableNodes for batch sorting/reordering.
+	wrapped := make([]node.InspectableNode, len(items))
+	for i := range items {
+		wrapped[i] = node.WrapObjectConsItem(&items[i])
 	}
-
-	// Step inside
-	for _, e := range expr.Items {
-		if err := r.checkExpression(runner, level+1, src, e.ValueExpr, opt); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return r.checkNodes(runner, src, level, wrapped)
 }
 
 func (r *SortingRule) checkTupleConsExpr(
@@ -562,7 +489,6 @@ func (r *SortingRule) checkTupleConsExpr(
 	x *hclsyntax.TupleConsExpr,
 	opt optSorting,
 ) error {
-	// Step inside
 	for _, e := range x.Exprs {
 		if err := r.checkExpression(runner, level+1, src, e, opt); err != nil {
 			return err
@@ -579,6 +505,5 @@ func (r *SortingRule) checkParenthesesExpr(
 	x *hclsyntax.ParenthesesExpr,
 	opt optSorting,
 ) error {
-	// Step inside
 	return r.checkExpression(runner, level+1, src, x.Expression, opt)
 }

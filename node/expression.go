@@ -56,6 +56,11 @@ func (expression) Type() string {
 	return "expression"
 }
 
+// Expr returns the wrapped expression.
+func (x expression) Expr() hclsyntax.Expression {
+	return x.expression
+}
+
 // Lines returns the number of lines the expression spans.
 func (x expression) Lines() int {
 	r := x.Range()

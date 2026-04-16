@@ -1,14 +1,14 @@
 [
     {
-        "Message": "single-line key/value pair should be placed before multi-line",
+        "Message": "single-line nodes `(aaa)` should precede multi-lines `(multi)`",
         "Range": {
             "Start": {
-                "Line": 7,
+                "Line": 4,
                 "Column": 5
             },
             "End": {
                 "Line": 7,
-                "Column": 10
+                "Column": 21
             }
         }
     }

@@ -56,6 +56,11 @@ func (attribute) Type() string {
 	return "attribute"
 }
 
+// Expr returns the attribute's value expression.
+func (a attribute) Expr() hclsyntax.Expression {
+	return a.attribute.Expr
+}
+
 // Lines returns the number of lines the attribute spans.
 func (a attribute) Lines() int {
 	r := a.Range()

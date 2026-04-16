@@ -1,14 +1,14 @@
 [
     {
-        "Message": "key `abc` is out of order (should not follow alphabetically greater `def`)",
+        "Message": "`(def, abc)` should be reordered `(abc, def)` (alphabetical sorting)",
         "Range": {
             "Start": {
-                "Line": 7,
+                "Line": 6,
                 "Column": 9
             },
             "End": {
                 "Line": 7,
-                "Column": 14
+                "Column": 28
             }
         }
     }

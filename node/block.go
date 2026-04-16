@@ -66,6 +66,11 @@ func (block) Type() string {
 	return "block"
 }
 
+// Expr returns nil (blocks are not expressions).
+func (block) Expr() hclsyntax.Expression {
+	return nil
+}
+
 // Lines returns the number of lines the block spans.
 func (b block) Lines() int {
 	r := b.Range()
