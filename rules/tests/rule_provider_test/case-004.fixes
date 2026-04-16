@@ -1,0 +1,6 @@
+# Test: provider not at expected position — fails
+resource "example" "this" {
+  provider = aws.west
+  name     = "foo"
+
+}

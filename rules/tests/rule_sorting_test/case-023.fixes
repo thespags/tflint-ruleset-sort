@@ -1,0 +1,11 @@
+locals {
+  data = {
+    for x in var.items : x => {
+      aaa = "val"
+      nested = {
+        yyy = "val"
+        zzz = "val"
+      }
+    }
+  }
+}

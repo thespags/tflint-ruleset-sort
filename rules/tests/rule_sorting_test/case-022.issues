@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "`(ccc, bbb, aaa, nested)` should be reordered `(aaa, bbb, ccc, nested)` (alphabetical sorting)",
+        "Range": {
+            "Start": {
+                "Line": 4,
+                "Column": 7
+            },
+            "End": {
+                "Line": 6,
+                "Column": 19
+            }
+        }
+    }
+]

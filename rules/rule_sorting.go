@@ -20,10 +20,6 @@ const (
 	dontSortMultiliners optSorting = 1 << iota
 )
 
-func (o optSorting) dontSortMultiliners() bool {
-	return o&dontSortMultiliners != 0
-}
-
 // SortingRule makes sure that all attributes and blocks are properly sorted.
 type SortingRule struct {
 	tflint.DefaultRule
@@ -289,6 +285,17 @@ func (r *SortingRule) preprocessResourceOrData(
 		}
 	}
 
+	// Drop leading `provider`
+	if disabled, exists := runner.Disabled["provider"]; !exists || !disabled {
+		if a := nodes[0].AsAttribute(); a != nil && a.Name == "provider" {
+			nodes = nodes[1:]
+		}
+
+		if len(nodes) == 0 {
+			return nodes, nil
+		}
+	}
+
 	// Drop trailing `depends_on`
 	if disabled, exists := runner.Disabled["depends_on"]; !exists || disabled {
 		if a := nodes[len(nodes)-1].AsAttribute(); a != nil && a.Name == "depends_on" {
@@ -360,6 +367,7 @@ func (r *SortingRule) preprocessResourceOrData(
 					}
 				}
 			}
+
 			if err := r.checkNodes(runner, src, level+1, knodes); err != nil {
 				return nil, err
 			}
@@ -429,7 +437,7 @@ func (r *SortingRule) checkExpression(
 	case *hclsyntax.FunctionCallExpr:
 		return r.checkFunctionCallExpr(runner, level, src, expr, opt)
 	case *hclsyntax.ObjectConsExpr:
-		return r.checkObjectConsExpr(runner, level, src, expr, opt)
+		return r.checkObjectConsExpr(runner, level, src, expr)
 	case *hclsyntax.ParenthesesExpr:
 		return r.checkParenthesesExpr(runner, level, src, expr, opt)
 	case *hclsyntax.TupleConsExpr:
@@ -470,7 +478,6 @@ func (r *SortingRule) checkObjectConsExpr(
 	level int,
 	src []byte,
 	expr *hclsyntax.ObjectConsExpr,
-	opt optSorting,
 ) error {
 	items := expr.Items
 
@@ -479,6 +486,7 @@ func (r *SortingRule) checkObjectConsExpr(
 	for i := range items {
 		wrapped[i] = node.WrapObjectConsItem(&items[i])
 	}
+
 	return r.checkNodes(runner, src, level, wrapped)
 }
 

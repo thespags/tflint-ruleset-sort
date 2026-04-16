@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "`provider` must follow `for_each`/`count` (or be the top-most attribute)",
+        "Range": {
+            "Start": {
+                "Line": 7,
+                "Column": 3
+            },
+            "End": {
+                "Line": 7,
+                "Column": 22
+            }
+        }
+    }
+]

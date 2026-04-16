@@ -8,7 +8,7 @@ import (
 	"github.com/thespags/tflint-ruleset-sort/visit"
 )
 
-// CountRule makes sure that `count` attribute is always on top.
+// CountRule makes sure that the `count` attribute is always on top.
 type CountRule struct {
 	tflint.DefaultRule
 }

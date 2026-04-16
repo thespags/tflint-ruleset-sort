@@ -1,0 +1,8 @@
+# Test: provider after for_each but not immediately — fails
+resource "example" "this" {
+  for_each = var.items
+
+  provider = aws.west
+  name     = "foo"
+
+}

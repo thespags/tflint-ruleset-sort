@@ -1,0 +1,9 @@
+locals {
+  data = {
+    for x in var.items : x => {
+      aaa = "val"
+      bbb = "val"
+      ccc = "val"
+    }
+  }
+}

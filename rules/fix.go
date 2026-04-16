@@ -58,24 +58,6 @@ func moveNodeAfter(fixer tflint.Fixer, src []byte, toMove, target hcl.Range) err
 	return fixer.InsertTextAfter(targetRange, moveText)
 }
 
-// swapAdjacentNodes swaps two nodes' positions, preserving spacing between them.
-func swapAdjacentNodes(fixer tflint.Fixer, src []byte, left, right hcl.Range) error {
-	leftRange := nodeLineRange(src, left)
-	rightRange := nodeLineRange(src, right)
-
-	leftText := string(src[leftRange.Start.Byte:leftRange.End.Byte])
-	spacing := string(src[leftRange.End.Byte:rightRange.Start.Byte])
-	rightText := string(src[rightRange.Start.Byte:rightRange.End.Byte])
-
-	region := hcl.Range{
-		Filename: left.Filename,
-		Start:    leftRange.Start,
-		End:      rightRange.End,
-	}
-
-	return fixer.ReplaceText(region, rightText+spacing+leftText)
-}
-
 // reorderNodes replaces a consecutive run of nodes with the given new order
 // in a single ReplaceText call. `oldOrder` is the nodes as they appear in the
 // source; `newOrder` is the desired sequence. Spacing between positions is
