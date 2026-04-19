@@ -1,4 +1,8 @@
-![GitHub tag](https://img.shields.io/github/v/tag/OWNER/REPO)
+![GitHub tag](https://img.shields.io/github/v/tag/thespags/tflint-ruleset-sort)
+![Build](https://img.shields.io/github/actions/workflow/status/thespags/tflint-ruleset-sort/ci.yml)
+![Go Version](https://img.shields.io/github/go-mod/go-version/thespags/tflint-ruleset-sort)
+![License](https://img.shields.io/github/license/thespags/tflint-ruleset-sort)
+[![Go Report Card](https://goreportcard.com/badge/github.com/thespags/tflint-ruleset-sort)](https://goreportcard.com/report/github.com/thespags/tflint-ruleset-sort)
 
 # TFLint Ruleset Sort
 
