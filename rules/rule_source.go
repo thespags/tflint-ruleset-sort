@@ -38,8 +38,8 @@ func (r *SourceRule) Link() string {
 	return project.ReferenceLink(r.Name())
 }
 
-// Check verifies whether the `source` clause is placed on the top of the module
-// definition.
+// Check verifies whether the `source` clause is placed after for_each/count
+// but before everything else in the module definition.
 func (r *SourceRule) Check(runner tflint.Runner) error {
 	return visit.Blocks(runner, func(block *hclsyntax.Block, src []byte) error {
 		if block.Type != "module" {
@@ -51,17 +51,31 @@ func (r *SourceRule) Check(runner tflint.Runner) error {
 			return nil
 		}
 
-		first := node.FirstNodeFrom(block.Body)
-		if first.AsAttribute() == source {
+		nodes := node.OrderedInspectableNodesFrom(block.Body)
+
+		// Skip leading for_each and count — source comes after them.
+		for len(nodes) > 0 {
+			a := nodes[0].AsAttribute()
+			if a == nil || (a.Name != "for_each" && a.Name != "count") {
+				break
+			}
+
+			nodes = nodes[1:]
+		}
+
+		if len(nodes) > 0 && nodes[0].AsAttribute() == source {
 			return nil
 		}
 
+		// source is not at the expected position — find the target to move before.
+		target := nodes[0]
+
 		return runner.EmitIssueWithFix(
 			r,
-			"`source` must be the top-most attribute",
+			"`source` must follow `for_each`/`count` (or be the top-most attribute)",
 			source.SrcRange,
 			func(fixer tflint.Fixer) error {
-				return moveNodeBefore(fixer, src, source.SrcRange, first.Range())
+				return moveNodeBefore(fixer, src, source.SrcRange, target.Range())
 			},
 		)
 	})

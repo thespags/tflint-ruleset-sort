@@ -1,6 +1,6 @@
 [
     {
-        "Message": "`source` must be the top-most attribute",
+        "Message": "`source` must follow `for_each`/`count` (or be the top-most attribute)",
         "Range": {
             "Start": {
                 "Line": 10,

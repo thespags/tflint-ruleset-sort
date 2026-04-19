@@ -95,8 +95,8 @@ func (r *KeyAttributesRule) checkModule(
 }
 
 // checkKeyAttributes verifies key attribute ordering within a body.
-// skipForEach controls whether `for_each` is skipped (true for resources, false for modules
-// where `for_each` is not relevant to key attribute positioning after `source`).
+// isResource controls whether `source` is skipped (false for modules where
+// `source` precedes key attributes).
 func (r *KeyAttributesRule) checkKeyAttributes(
 	runner *custom.Runner,
 	body *hclsyntax.Body,
@@ -137,7 +137,7 @@ func (r *KeyAttributesRule) checkKeyAttributes(
 		// Skip special leading attributes.
 		if n.IsAttribute() {
 			name := n.Name()
-			if isResource && (name == "for_each" || name == "count") {
+			if name == "for_each" || name == "count" {
 				continue
 			}
 

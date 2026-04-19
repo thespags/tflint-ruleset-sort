@@ -11,7 +11,6 @@ import (
 	"github.com/thespags/tflint-ruleset-sort/node"
 	"github.com/thespags/tflint-ruleset-sort/project"
 	"github.com/thespags/tflint-ruleset-sort/visit"
-	"github.com/zclconf/go-cty/cty"
 )
 
 type optSorting uint
@@ -249,7 +248,12 @@ func (r *SortingRule) checkBlock(
 
 		// Top-level `module` block
 		if block.Type == "module" {
-			nodes = r.preprocessModule(runner, block.Body, nodes)
+			var err error
+
+			nodes, err = r.preprocessModule(runner, src, level, block.Body, nodes)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -263,160 +267,104 @@ func (r *SortingRule) preprocessResourceOrData(
 	kind string,
 	nodes []node.InspectableNode,
 ) ([]node.InspectableNode, error) {
-	// Drop leading `for_each`
-	if disabled, exists := runner.Disabled["for_each"]; !exists || !disabled {
-		if a := nodes[0].AsAttribute(); a != nil && a.Name == "for_each" {
-			nodes = nodes[1:]
-		}
+	nodes = dropHeadAttribute(runner, nodes, "for_each")
+	nodes = dropHeadAttribute(runner, nodes, "count")
+	nodes = dropHeadAttribute(runner, nodes, "provider")
+	nodes = dropTailAttribute(runner, nodes, "depends_on")
+	nodes = dropTailBlock(runner, nodes, "lifecycle")
 
-		if len(nodes) == 0 {
-			return nodes, nil
-		}
-	}
-
-	// Drop leading `count`
-	if disabled, exists := runner.Disabled["count"]; !exists || !disabled {
-		if a := nodes[0].AsAttribute(); a != nil && a.Name == "count" {
-			nodes = nodes[1:]
-		}
-
-		if len(nodes) == 0 {
-			return nodes, nil
-		}
-	}
-
-	// Drop leading `provider`
-	if disabled, exists := runner.Disabled["provider"]; !exists || !disabled {
-		if a := nodes[0].AsAttribute(); a != nil && a.Name == "provider" {
-			nodes = nodes[1:]
-		}
-
-		if len(nodes) == 0 {
-			return nodes, nil
-		}
-	}
-
-	// Drop trailing `depends_on`
-	if disabled, exists := runner.Disabled["depends_on"]; !exists || disabled {
-		if a := nodes[len(nodes)-1].AsAttribute(); a != nil && a.Name == "depends_on" {
-			nodes = nodes[:len(nodes)-1]
-		}
-
-		if len(nodes) == 0 {
-			return nodes, nil
-		}
-	}
-
-	// Drop trailing `lifecycle`
-	if disabled, exists := runner.Disabled["lifecycle"]; !exists || !disabled {
-		if b := nodes[len(nodes)-1].AsBlock(); b != nil && b.Type == "lifecycle" {
-			nodes = nodes[:len(nodes)-1]
-		}
-
-		if len(nodes) == 0 {
-			return nodes, nil
-		}
+	if len(nodes) == 0 {
+		return nodes, nil
 	}
 
 	// Drop key-attributes
 	if disabled, exists := runner.Disabled["key_attributes"]; !exists || !disabled {
-		// Are there key-attributes?
 		resource, ok := runner.Resources[kind]
 		if !ok {
 			return nodes, nil
 		}
 
-		if len(resource.KeyAttributes) == 0 {
-			return nodes, nil
-		}
-
-		// Drop key-attributes
-		if level > len(resource.KeyBlocks) {
-			for _, key := range resource.KeyAttributes {
-				if len(nodes) == 0 {
-					break
-				}
-
-				if a := nodes[0].AsAttribute(); a != nil {
-					if a.Name == key {
-						nodes = nodes[1:] // Drop
-					}
-				}
-			}
-
-			return nodes, nil
-		}
-
-		// Drop the key block but inspect its contents
-		// KeyBlocks are the mapping of prefix, so manifest.metadata -> ["manifest", "metadata"]
-		// And, we're only allowed one set of KeyBlocks.
-		if kb := nodes[0].AsBlock(); kb != nil && kb.Type == resource.KeyBlocks[level-1] {
-			nodes = nodes[1:] // Drop
-			knodes := node.OrderedInspectableNodesFrom(kb.Body)
-			// Drop leading key attributes inside the key block
-			if len(resource.KeyBlocks) == level {
-				for _, key := range resource.KeyAttributes {
-					if len(knodes) == 0 {
-						break
-					}
-
-					if a := knodes[0].AsAttribute(); a != nil {
-						if a.Name == key {
-							knodes = knodes[1:] // Drop
-						}
-					}
-				}
-			}
-
-			if err := r.checkNodes(runner, src, level+1, knodes); err != nil {
-				return nil, err
-			}
-		}
+		return r.dropKeyAttributes(runner, src, level, resource, nodes)
 	}
 
 	return nodes, nil
 }
 
-func (*SortingRule) preprocessModule(
+func (r *SortingRule) preprocessModule(
 	runner *custom.Runner,
+	src []byte,
+	level int,
 	body *hclsyntax.Body,
 	nodes []node.InspectableNode,
-) []node.InspectableNode {
-	// Drop leading `source`
-	if disabled, exists := runner.Disabled["source"]; !exists || !disabled {
-		if len(nodes) > 0 {
-			if a := nodes[0].AsAttribute(); a != nil && a.Name == "source" {
+) ([]node.InspectableNode, error) {
+	nodes = dropHeadAttribute(runner, nodes, "for_each")
+	nodes = dropHeadAttribute(runner, nodes, "count")
+	nodes = dropHeadAttribute(runner, nodes, "source")
+
+	// Drop key-attributes for modules (keyed by source value)
+	if disabled, exists := runner.Disabled["key_attributes"]; !exists || !disabled {
+		sourceStr := getSource(&hclsyntax.Block{Body: body})
+
+		module, ok := runner.Modules[sourceStr]
+		if !ok {
+			return nodes, nil
+		}
+
+		return r.dropKeyAttributes(runner, src, level, module, nodes)
+	}
+
+	return nodes, nil
+}
+
+func (r *SortingRule) dropKeyAttributes(
+	runner *custom.Runner,
+	src []byte,
+	level int,
+	resource *custom.Resource,
+	nodes []node.InspectableNode,
+) ([]node.InspectableNode, error) {
+	if len(resource.KeyAttributes) == 0 {
+		return nodes, nil
+	}
+
+	// Drop key-attributes
+	if level > len(resource.KeyBlocks) {
+		for _, key := range resource.KeyAttributes {
+			if len(nodes) == 0 {
+				break
+			}
+
+			if a := nodes[0].AsAttribute(); a != nil && a.Name == key {
 				nodes = nodes[1:]
 			}
 		}
 
-		if len(nodes) == 0 {
-			return nodes
-		}
+		return nodes, nil
 	}
 
-	// Drop key-attributes for modules (keyed by source value)
-	if disabled, exists := runner.Disabled["key_attributes"]; !exists || !disabled {
-		source, exists := body.Attributes["source"]
-		if exists {
-			val, diags := source.Expr.Value(nil)
-			if !diags.HasErrors() && val.Type() == cty.String {
-				if module, ok := runner.Modules[val.AsString()]; ok {
-					for _, key := range module.KeyAttributes {
-						if len(nodes) == 0 {
-							break
-						}
+	// Drop the key block and inspect its contents
+	if kb := nodes[0].AsBlock(); kb != nil && kb.Type == resource.KeyBlocks[level-1] {
+		nodes = nodes[1:]
+		knodes := node.OrderedInspectableNodesFrom(kb.Body)
 
-						if a := nodes[0].AsAttribute(); a != nil && a.Name == key {
-							nodes = nodes[1:]
-						}
-					}
+		if len(resource.KeyBlocks) == level {
+			for _, key := range resource.KeyAttributes {
+				if len(knodes) == 0 {
+					break
+				}
+
+				if a := knodes[0].AsAttribute(); a != nil && a.Name == key {
+					knodes = knodes[1:]
 				}
 			}
 		}
+
+		if err := r.checkNodes(runner, src, level+1, knodes); err != nil {
+			return nil, err
+		}
 	}
 
-	return nodes
+	return nodes, nil
 }
 
 func (r *SortingRule) checkExpression(
@@ -514,4 +462,34 @@ func (r *SortingRule) checkParenthesesExpr(
 	opt optSorting,
 ) error {
 	return r.checkExpression(runner, level+1, src, x.Expression, opt)
+}
+
+func dropHeadAttribute(runner *custom.Runner, nodes []node.InspectableNode, kind string) []node.InspectableNode {
+	if disabled, exists := runner.Disabled[kind]; len(nodes) > 0 && (!exists || disabled) {
+		if a := nodes[0].AsAttribute(); a != nil && a.Name == kind {
+			nodes = nodes[1:]
+		}
+	}
+
+	return nodes
+}
+
+func dropTailAttribute(runner *custom.Runner, nodes []node.InspectableNode, kind string) []node.InspectableNode {
+	if disabled, exists := runner.Disabled[kind]; len(nodes) > 0 && (!exists || disabled) {
+		if a := nodes[len(nodes)-1].AsAttribute(); a != nil && a.Name == kind {
+			nodes = nodes[:len(nodes)-1]
+		}
+	}
+
+	return nodes
+}
+
+func dropTailBlock(runner *custom.Runner, nodes []node.InspectableNode, kind string) []node.InspectableNode {
+	if disabled, exists := runner.Disabled[kind]; len(nodes) > 0 && (!exists || disabled) {
+		if b := nodes[len(nodes)-1].AsBlock(); b != nil && b.Type == kind {
+			nodes = nodes[:len(nodes)-1]
+		}
+	}
+
+	return nodes
 }

@@ -1,0 +1,6 @@
+# Test: failing - module with for_each not as top-most attribute
+module "example" {
+  for_each = var.items
+  source   = "./modules/example"
+  name     = "foo"
+}

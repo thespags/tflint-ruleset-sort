@@ -1,6 +1,7 @@
 # Rule `sort_source`
 
-Makes sure that `source` meta-attribute is placed at the top of `module` block.
+Makes sure that `source` meta-attribute is placed at the top of `module` block,
+or right after `for_each`/`count` when present.
 
 ## Example
 
@@ -18,7 +19,7 @@ module "website_s3_bucket" {
 ```
 
 ```text
-Error: `source` must be the top-most attribute (sort_source)
+Error: `source` must follow `for_each`/`count` (or be the top-most attribute) (sort_source)
 
   on template.tf line 9:
    9:   source = "./modules/aws-s3-static-website-bucket"

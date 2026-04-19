@@ -731,8 +731,10 @@ func (r *SpacingRule) checkModuleSpacing(
 	sourceStr := getSource(block)
 	keys := keyAttrSet(runner.Modules, sourceStr)
 
-	// Key attributes are configured: group source + key-attributes together.
+	// Group source + for_each/count + key-attributes together.
 	keys["source"] = true
+	keys["for_each"] = true
+	keys["count"] = true
 
 	return r.checkKeyAttributeSpacing(runner, src, nodes, keys)
 }

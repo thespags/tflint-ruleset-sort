@@ -1,7 +1,7 @@
 # Rule `for_each`
 
-Makes sure that `for_each` meta-attribute is placed at the top of `resource` or
-`data` block.
+Makes sure that `for_each` meta-attribute is placed at the top of `resource`,
+`data`, or `module` block.
 
 ## Example
 

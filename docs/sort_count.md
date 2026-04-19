@@ -1,7 +1,7 @@
 # Rule `sort_count`
 
-Makes sure that `count` meta-attribute is placed at the top of `resource` or
-`data` block.
+Makes sure that `count` meta-attribute is placed at the top of `resource`,
+`data`, or `module` block.
 
 ## Example
 

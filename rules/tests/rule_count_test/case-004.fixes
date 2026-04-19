@@ -1,0 +1,6 @@
+# Test: failing - module with count not as top-most attribute
+module "example" {
+  count  = 3
+  source = "./modules/example"
+  name   = "foo"
+}

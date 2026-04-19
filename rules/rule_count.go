@@ -38,11 +38,11 @@ func (r *CountRule) Link() string {
 	return project.ReferenceLink(r.Name())
 }
 
-// Check verifies whether the `count` clause is placed on the top of the resource
-// definition.
+// Check verifies whether the `count` clause is placed on the top of the
+// resource, data, or module definition.
 func (r *CountRule) Check(runner tflint.Runner) error {
 	return visit.Blocks(runner, func(block *hclsyntax.Block, src []byte) error {
-		if block.Type != "resource" && block.Type != "data" {
+		if block.Type != "resource" && block.Type != "data" && block.Type != "module" {
 			return nil
 		}
 

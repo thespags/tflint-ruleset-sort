@@ -10,14 +10,16 @@ TFLint ruleset plugin that enforces consistent Terraform formatting — sorting,
 
 | Rule | Description |
 |------|-------------|
-| [`sort_count`](docs/sort_count.md) | `count` placed at top of resource |
+| [`sort_count`](docs/sort_count.md) | `count` placed at top of resource or module |
 | [`sort_depends_on`](docs/sort_depends_on.md) | `depends_on` placed at end of resource |
-| [`sort_for_each`](docs/sort_for_each.md) | `for_each` placed at top of resource |
+| [`sort_for_each`](docs/sort_for_each.md) | `for_each` placed at top of resource or module |
 | [`sort_key_attributes`](docs/sort_key_attributes.md) | Key attributes defined first and in priority order |
 | [`sort_lifecycle`](docs/sort_lifecycle.md) | `lifecycle` block placed at end of resource |
+| [`sort_provider`](docs/sort_provider.md) | `provider` placed after `for_each`/`count` |
 | [`sort_sorting`](docs/sort_sorting.md) | Alphabetical sorting of blocks and dictionary keys |
-| [`sort_source`](docs/sort_source.md) | `source` placed at top of module |
+| [`sort_source`](docs/sort_source.md) | `source` placed after `for_each`/`count` in module |
 | [`sort_spacing`](docs/sort_spacing.md) | Consistent blank lines between attributes and blocks |
+| [`sort_unknown_resource`](docs/sort_unknown_resource.md) | Warns on resources not in the configuration |
 
 ## Installation
 
@@ -72,8 +74,8 @@ tflint
 
 Some resources come with their key-attributes pre-defined.  However,
 their set is far from being exhaustive. To define the
-key-attributes for a resource/data blocks (so that `key_attributes`
-rule picks them up) add them to in `.tflint.hcl` like follows:
+key-attributes for resource/data/module blocks (so that `key_attributes`
+rule picks them up) add them to `.tflint.hcl` like follows:
 
 ```hcl
 plugin "sort" {
@@ -82,5 +84,12 @@ plugin "sort" {
   resource "kubernetes_deployment" {
     key_attributes = ["metadata.namespace", "metadata.name"]
   }
+
+  module "terraform-aws-modules/vpc/aws" {
+    key_attributes = ["name", "cidr"]
+  }
 }
 ```
+
+Module blocks are keyed by their `source` value rather than the module name,
+since module names are user-defined and the source uniquely identifies the module.
