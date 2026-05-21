@@ -1,14 +1,14 @@
 [
     {
-        "Message": "key-attributes for module type `` are not configured",
+        "Message": "key-attributes for resource type `custom_lookup` are not configured",
         "Range": {
             "Start": {
                 "Line": 2,
-                "Column": 8
+                "Column": 10
             },
             "End": {
                 "Line": 2,
-                "Column": 17
+                "Column": 25
             }
         }
     }

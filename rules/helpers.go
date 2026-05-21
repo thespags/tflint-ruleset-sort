@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/thespags/tflint-ruleset-sort/custom"
 	"github.com/thespags/tflint-ruleset-sort/node"
-	"github.com/zclconf/go-cty/cty"
 )
 
 func toNames(nodes []node.InspectableNode) string {
@@ -106,25 +105,11 @@ func lineOrLines(count int) string {
 	return "lines"
 }
 
-func getSource(block *hclsyntax.Block) string {
-	source, exists := block.Body.Attributes["source"]
-	if !exists {
-		return ""
-	}
-
-	val, diags := source.Expr.Value(nil)
-	if diags.HasErrors() || val.Type() != cty.String {
-		return ""
-	}
-
-	return val.AsString()
-}
-
-// resourceKeyAttrSet returns the set of key-attribute names for a resource/data block,
-// or nil if none are configured or if key-attributes are nested in key-blocks.
-func keyAttrSet(resources map[string]*custom.Resource, kind string) map[string]bool {
-	resource, known := resources[kind]
-	if !known || len(resource.KeyAttributes) == 0 {
+// keyAttrSet returns the set of key-attribute names for a resource/data/module
+// config, or an empty set if the resource is unconfigured or has no key
+// attributes.
+func keyAttrSet(resource *custom.Resource) map[string]bool {
+	if resource == nil || len(resource.KeyAttributes) == 0 {
 		return make(map[string]bool)
 	}
 

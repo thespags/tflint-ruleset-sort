@@ -7,6 +7,7 @@ import (
 // Config is the configuration for the ruleset.
 type Config struct {
 	Resources []*Resource `hclext:"resource,block"`
+	Data      []*Resource `hclext:"data,block"`
 	Modules   []*Resource `hclext:"module,block"`
 }
 

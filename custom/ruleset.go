@@ -23,8 +23,10 @@ func (r *RuleSet) ConfigSchema() *hclext.BodySchema {
 // ApplyConfig applies the configuration to the ruleset.
 func (r *RuleSet) ApplyConfig(body *hclext.BodyContent) error {
 	predefinedResources := r.config.Resources
+	predefinedData := r.config.Data
 	predefinedModules := r.config.Modules
 	r.config.Resources = make([]*config.Resource, 0)
+	r.config.Data = make([]*config.Resource, 0)
 	r.config.Modules = make([]*config.Resource, 0)
 
 	diags := hclext.DecodeBody(body, nil, r.config)
@@ -33,6 +35,7 @@ func (r *RuleSet) ApplyConfig(body *hclext.BodyContent) error {
 	}
 
 	r.config.Resources = append(predefinedResources, r.config.Resources...)
+	r.config.Data = append(predefinedData, r.config.Data...)
 	r.config.Modules = append(predefinedModules, r.config.Modules...)
 
 	return nil

@@ -90,6 +90,10 @@ plugin "sort" {
     key_attributes = ["metadata.namespace", "metadata.name"]
   }
 
+  data "gitlab_projects" {
+    key_attributes = ["group_id"]
+  }
+
   module "terraform-aws-modules/vpc/aws" {
     key_attributes = ["name", "cidr"]
   }
@@ -98,3 +102,20 @@ plugin "sort" {
 
 Module blocks are keyed by their `source` value rather than the module name,
 since module names are user-defined and the source uniquely identifies the module.
+
+### `resource` vs `data` lookup and one-way fallback
+
+`resource "X"` and `data "X"` are looked up independently, with a one-way
+fallback from data to resource:
+
+- A `data "X"` block in your Terraform code uses the `data "X"` config first.
+  If no `data "X"` block is declared in `.tflint.hcl`, it falls back to a
+  same-named `resource "X"` config (a data source is conceptually a read-only
+  view of the same upstream type as the resource).
+- A `resource "X"` block in your Terraform code uses **only** the
+  `resource "X"` config. It does not fall back to a `data "X"` config.
+
+This means existing configs that declare only `resource "X"` continue to cover
+both `resource "X"` and `data "X"` blocks in code without change. Adding a more
+specific `data "X"` block lets you override the key attributes for the data
+form only.

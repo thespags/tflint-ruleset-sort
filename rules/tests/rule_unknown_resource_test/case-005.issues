@@ -1,6 +1,6 @@
 [
     {
-        "Message": "key-attributes for module source `./modules/epsilon` are not configured",
+        "Message": "key-attributes for module type `./modules/epsilon` are not configured",
         "Range": {
             "Start": {
                 "Line": 2,

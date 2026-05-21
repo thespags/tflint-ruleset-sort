@@ -16,6 +16,7 @@ type UnknownResourceRule struct {
 	tflint.DefaultRule
 
 	mu            *sync.Mutex
+	seenData      map[string]struct{}
 	seenResources map[string]struct{}
 	seenModules   map[string]struct{}
 }
@@ -24,6 +25,7 @@ type UnknownResourceRule struct {
 func NewUnknownResourceRule() *UnknownResourceRule {
 	return &UnknownResourceRule{
 		mu:            &sync.Mutex{},
+		seenData:      map[string]struct{}{},
 		seenResources: map[string]struct{}{},
 		seenModules:   map[string]struct{}{},
 	}
@@ -55,15 +57,12 @@ func (r *UnknownResourceRule) Check(rr tflint.Runner) error {
 	switch runner := rr.(type) {
 	case *custom.Runner:
 		return visit.Blocks(runner, func(block *hclsyntax.Block, _ []byte) error {
-			if block.Type == "resource" || block.Type == "data" {
-				return r.checkBlock(runner, runner.Resources, block)
+			resource := runner.Lookup(block)
+			if resource != nil {
+				return nil
 			}
 
-			if block.Type == "module" {
-				return r.checkModule(runner, block)
-			}
-
-			return nil
+			return r.checkIssue(runner, block)
 		})
 
 	default:
@@ -71,59 +70,40 @@ func (r *UnknownResourceRule) Check(rr tflint.Runner) error {
 	}
 }
 
-func (r *UnknownResourceRule) checkBlock(
-	runner *custom.Runner,
-	resources map[string]*custom.Resource,
-	block *hclsyntax.Block,
-) error {
-	kind := block.Labels[0]
-	if _, kindIsKnown := resources[kind]; kindIsKnown {
+func (r *UnknownResourceRule) checkIssue(runner *custom.Runner, block *hclsyntax.Block) error {
+	var seenMap map[string]struct{}
+	var kind string
+	switch block.Type {
+	case "data":
+		kind = block.Labels[0]
+		seenMap = r.seenData
+	case "resource":
+		kind = block.Labels[0]
+		seenMap = r.seenResources
+	case "module":
+		kind = custom.GetSource(block)
+		seenMap = r.seenModules
+	}
+	
+	if seenMap == nil {
+		// not a resource we care about
 		return nil
 	}
 
 	r.mu.Lock()
-
-	_, seen := r.seenResources[kind]
+	_, seen := seenMap[kind]
 	if !seen {
-		r.seenResources[kind] = struct{}{}
+		seenMap[kind] = struct{}{}
 	}
 	r.mu.Unlock()
 
-	if !seen {
-		return runner.EmitIssue(
-			r,
-			fmt.Sprintf("key-attributes for resource type `%s` are not configured", kind),
-			block.LabelRanges[0],
-		)
-	}
-
-	return nil
-}
-
-func (r *UnknownResourceRule) checkModule(
-	runner *custom.Runner,
-	block *hclsyntax.Block,
-) error {
-	sourceStr := getSource(block)
-	if _, known := runner.Modules[sourceStr]; known {
+	if seen {
 		return nil
 	}
 
-	r.mu.Lock()
-
-	_, seen := r.seenModules[sourceStr]
-	if !seen {
-		r.seenModules[sourceStr] = struct{}{}
-	}
-	r.mu.Unlock()
-
-	if !seen {
-		return runner.EmitIssue(
-			r,
-			fmt.Sprintf("key-attributes for module source `%s` are not configured", sourceStr),
-			block.LabelRanges[0],
-		)
-	}
-
-	return nil
+	return runner.EmitIssue(
+		r,
+		fmt.Sprintf("key-attributes for %s type `%s` are not configured", block.Type, kind),
+		block.LabelRanges[0],
+	)
 }

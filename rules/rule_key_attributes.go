@@ -48,50 +48,25 @@ func (r *KeyAttributesRule) Check(rr tflint.Runner) error {
 	switch runner := rr.(type) {
 	case *custom.Runner:
 		return visit.Blocks(runner, func(block *hclsyntax.Block, src []byte) error {
-			switch block.Type {
-			case "resource", "data":
-				return r.checkResourceOrData(runner, block, src)
-			case "module":
-				return r.checkModule(runner, block, src)
-			default:
+			if block.Type != "resource" && block.Type != "data" && block.Type != "module" {
 				return nil
 			}
+
+			cfg := runner.Lookup(block)
+			if cfg == nil {
+				return nil
+			}
+
+			// For module blocks, `source` precedes key attributes and must
+			// not be sorted between them; isResource=false skips it.
+			isResource := block.Type != "module"
+
+			return r.checkKeyAttributes(runner, block.Body, src, cfg, isResource)
 		})
 
 	default:
 		return nil
 	}
-}
-
-func (r *KeyAttributesRule) checkResourceOrData(
-	runner *custom.Runner,
-	block *hclsyntax.Block,
-	src []byte,
-) error {
-	kind := block.Labels[0]
-
-	resource, kindIsKnown := runner.Resources[kind]
-	if !kindIsKnown {
-		return nil
-	}
-
-	return r.checkKeyAttributes(runner, block.Body, src, resource, true)
-}
-
-func (r *KeyAttributesRule) checkModule(
-	runner *custom.Runner,
-	block *hclsyntax.Block,
-	src []byte,
-) error {
-	// Determine the module source to look up key attributes.
-	sourceStr := getSource(block)
-
-	module, known := runner.Modules[sourceStr]
-	if !known || len(module.KeyAttributes) == 0 {
-		return nil
-	}
-
-	return r.checkKeyAttributes(runner, block.Body, src, module, false)
 }
 
 // checkKeyAttributes verifies key attribute ordering within a body.

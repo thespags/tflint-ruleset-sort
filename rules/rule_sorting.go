@@ -240,7 +240,7 @@ func (r *SortingRule) checkBlock(
 		if block.Type == "resource" || block.Type == "data" {
 			var err error
 
-			nodes, err = r.preprocessResourceOrData(runner, src, level, block.Labels[0], nodes)
+			nodes, err = r.preprocessResourceOrData(runner, src, level, block, nodes)
 			if err != nil {
 				return err
 			}
@@ -250,7 +250,7 @@ func (r *SortingRule) checkBlock(
 		if block.Type == "module" {
 			var err error
 
-			nodes, err = r.preprocessModule(runner, src, level, block.Body, nodes)
+			nodes, err = r.preprocessModule(runner, src, level, block, nodes)
 			if err != nil {
 				return err
 			}
@@ -264,7 +264,7 @@ func (r *SortingRule) preprocessResourceOrData(
 	runner *custom.Runner,
 	src []byte,
 	level int,
-	kind string,
+	block *hclsyntax.Block,
 	nodes []node.InspectableNode,
 ) ([]node.InspectableNode, error) {
 	nodes = dropHeadAttribute(runner, nodes, "for_each")
@@ -279,8 +279,8 @@ func (r *SortingRule) preprocessResourceOrData(
 
 	// Drop key-attributes
 	if disabled, exists := runner.Disabled["key_attributes"]; !exists || !disabled {
-		resource, ok := runner.Resources[kind]
-		if !ok {
+		resource := runner.Lookup(block)
+		if resource == nil {
 			return nodes, nil
 		}
 
@@ -294,7 +294,7 @@ func (r *SortingRule) preprocessModule(
 	runner *custom.Runner,
 	src []byte,
 	level int,
-	body *hclsyntax.Body,
+	block *hclsyntax.Block,
 	nodes []node.InspectableNode,
 ) ([]node.InspectableNode, error) {
 	nodes = dropHeadAttribute(runner, nodes, "for_each")
@@ -303,10 +303,8 @@ func (r *SortingRule) preprocessModule(
 
 	// Drop key-attributes for modules (keyed by source value)
 	if disabled, exists := runner.Disabled["key_attributes"]; !exists || !disabled {
-		sourceStr := getSource(&hclsyntax.Block{Body: body})
-
-		module, ok := runner.Modules[sourceStr]
-		if !ok {
+		module := runner.Lookup(block)
+		if module == nil {
 			return nodes, nil
 		}
 

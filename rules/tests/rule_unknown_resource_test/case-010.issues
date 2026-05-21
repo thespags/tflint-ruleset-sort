@@ -1,6 +1,6 @@
 [
     {
-        "Message": "key-attributes for module source `./modules/foo` are not configured",
+        "Message": "key-attributes for module type `./modules/foo` are not configured",
         "Range": {
             "Start": {
                 "Line": 2,

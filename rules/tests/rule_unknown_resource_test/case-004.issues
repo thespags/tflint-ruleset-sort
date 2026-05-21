@@ -1,6 +1,6 @@
 [
     {
-        "Message": "key-attributes for resource type `delta_query` are not configured",
+        "Message": "key-attributes for data type `delta_query` are not configured",
         "Range": {
             "Start": {
                 "Line": 2,

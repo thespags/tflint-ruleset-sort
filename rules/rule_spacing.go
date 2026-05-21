@@ -193,11 +193,9 @@ func (r *SpacingRule) checkBlock(
 
 		// Check key-attribute spacing for resources/data
 		if len(nodes) > 1 {
-			kind := block.Labels[0]
-
 			var err error
 
-			nodes, err = r.checkKeyAttributeSpacing(runner, src, nodes, keyAttrSet(runner.Resources, kind))
+			nodes, err = r.checkKeyAttributeSpacing(runner, src, nodes, keyAttrSet(runner.Lookup(block)))
 			if len(nodes) == 0 || err != nil {
 				return err
 			}
@@ -728,8 +726,7 @@ func (r *SpacingRule) checkModuleSpacing(
 	src []byte,
 	nodes []node.InspectableNode,
 ) ([]node.InspectableNode, error) {
-	sourceStr := getSource(block)
-	keys := keyAttrSet(runner.Modules, sourceStr)
+	keys := keyAttrSet(runner.Lookup(block))
 
 	// Group source + for_each/count + key-attributes together.
 	keys["source"] = true

@@ -1,6 +1,6 @@
 [
     {
-        "Message": "key-attributes for resource type `gamma_lookup` are not configured",
+        "Message": "key-attributes for data type `gamma_lookup` are not configured",
         "Range": {
             "Start": {
                 "Line": 2,
