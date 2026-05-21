@@ -35,7 +35,7 @@ You can install the plugin with `tflint --init`. Declare a config in
 plugin "sort" {
   enabled = true
 
-  version = "0.0.7"
+  version = "0.0.8"
   source  = "github.com/thespags/tflint-ruleset-sort"
 }
 ```
