@@ -81,6 +81,7 @@ func TestLookup_OneWayFallback(t *testing.T) {
 			got := runner.Lookup(block)
 			if tt.wantNil {
 				assert.Nil(t, got)
+
 				return
 			}
 

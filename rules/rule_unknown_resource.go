@@ -71,8 +71,11 @@ func (r *UnknownResourceRule) Check(rr tflint.Runner) error {
 }
 
 func (r *UnknownResourceRule) checkIssue(runner *custom.Runner, block *hclsyntax.Block) error {
-	var seenMap map[string]struct{}
-	var kind string
+	var (
+		seenMap map[string]struct{}
+		kind    string
+	)
+
 	switch block.Type {
 	case "data":
 		kind = block.Labels[0]
@@ -84,13 +87,14 @@ func (r *UnknownResourceRule) checkIssue(runner *custom.Runner, block *hclsyntax
 		kind = custom.GetSource(block)
 		seenMap = r.seenModules
 	}
-	
+
 	if seenMap == nil {
 		// not a resource we care about
 		return nil
 	}
 
 	r.mu.Lock()
+
 	_, seen := seenMap[kind]
 	if !seen {
 		seenMap[kind] = struct{}{}

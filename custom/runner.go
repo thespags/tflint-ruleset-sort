@@ -98,6 +98,7 @@ func (r *Runner) Lookup(block *hclsyntax.Block) *Resource {
 		if res, ok := r.Data[block.Labels[0]]; ok {
 			return res
 		}
+
 		return r.Resources[block.Labels[0]]
 	case "resource":
 		return r.Resources[block.Labels[0]]

@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -53,9 +54,9 @@ func sortedRange(oldOrder, newOrder []node.InspectableNode) hcl.Range {
 	}
 
 	end := oldOrder[len(oldOrder)-1]
-	for i := len(oldOrder) - 1; i >= 0; i-- {
-		if oldOrder[i] != newOrder[i] {
-			end = oldOrder[i]
+	for i, v := range slices.Backward(oldOrder) {
+		if v != newOrder[i] {
+			end = v
 
 			break
 		}

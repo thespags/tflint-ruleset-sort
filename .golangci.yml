@@ -45,8 +45,9 @@ linters:
     - gocognit
     - lll
 
-    # replaced by wsl_v5
+    # deprecated versions
     - wsl
+    - gomodguard
 
     # replaced by paralleltest
     - tparallel
@@ -64,6 +65,14 @@ linters:
     - musttag
     - nestif
     - testpackage
+
+  exclusions:
+    warn-unused: true
+
+    rules:
+      - path: "_test.go"
+        linters:
+          - varnamelen # tests can use short names
 
   settings:
 
