@@ -1,0 +1,9 @@
+locals {
+  nested = {
+    items = [
+      "alpha",
+      "mu",
+      "zeta",
+    ]
+  }
+}

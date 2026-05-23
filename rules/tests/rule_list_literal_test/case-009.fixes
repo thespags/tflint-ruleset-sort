@@ -1,0 +1,7 @@
+resource "example" "this" {
+  items = [
+    "${var.a}",
+    "${var.m}",
+    "${var.z}",
+  ]
+}

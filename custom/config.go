@@ -8,8 +8,12 @@ import (
 )
 
 func parseConfigResource(resource *config.Resource) (*Resource, error) {
+	out := &Resource{
+		SkipSortLiterals: append([]string(nil), resource.SkipSortLiterals...),
+	}
+
 	if len(resource.Keys) == 0 {
-		return &Resource{}, nil
+		return out, nil
 	}
 
 	keys := strings.Split(resource.Keys[0], ".")
@@ -32,8 +36,8 @@ func parseConfigResource(resource *config.Resource) (*Resource, error) {
 		keyAttributes = append(keyAttributes, keys[len(keys)-1])
 	}
 
-	return &Resource{
-		KeyBlocks:     keyBlocks,
-		KeyAttributes: keyAttributes,
-	}, nil
+	out.KeyBlocks = keyBlocks
+	out.KeyAttributes = keyAttributes
+
+	return out, nil
 }

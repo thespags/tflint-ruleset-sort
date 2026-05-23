@@ -34,6 +34,12 @@ type Resource struct {
 	// KeyAttributes is the prioritized list of attributes that uniquely
 	// identify the `resource` or `data` block.
 	KeyAttributes []string
+
+	// SkipSortLiterals is the list of attribute names whose list-literal
+	// values should be left in source order (not sorted by `sort_sorting`).
+	// Use this for attributes where element order is semantically meaningful,
+	// e.g. `command`, `args`, URL `path` lists.
+	SkipSortLiterals []string
 }
 
 // NewRunner returns a new runner.

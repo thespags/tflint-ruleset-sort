@@ -7,6 +7,9 @@ Makes sure that blocks and dictionary keys are sorted alphabetically.
 - The position of special cases like `for_each`/`count`, `depends_on`, and so on
   is respected so that there are no contradictions.
 
+List-literal *values* are sorted by a separate rule —
+[`sort_list_literal`](sort_list_literal.md).
+
 ## Example
 
 ```hcl

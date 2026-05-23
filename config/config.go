@@ -13,8 +13,9 @@ type Config struct {
 
 // Resource is the custom configuration of the resource-specific behavior.
 type Resource struct {
-	Kind string   `hclext:"name,label"`
-	Keys []string `hclext:"key_attributes"`
+	Kind             string   `hclext:"name,label"`
+	Keys             []string `hclext:"key_attributes,optional"`
+	SkipSortLiterals []string `hclext:"skip_sort_literals,optional"`
 }
 
 // New creates a new configuration structure that is pre-filled with defaults.

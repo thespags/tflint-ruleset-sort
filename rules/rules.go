@@ -11,6 +11,7 @@ func All() []tflint.Rule {
 		NewForEachRule(),
 		NewKeyAttributesRule(),
 		NewLifecycleRule(),
+		NewListLiteralRule(),
 		NewProviderRule(),
 		NewSortingRule(),
 		NewSourceRule(),

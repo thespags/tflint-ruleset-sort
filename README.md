@@ -20,6 +20,7 @@ TFLint ruleset plugin that enforces consistent Terraform formatting — sorting,
 | [`sort_for_each`](docs/sort_for_each.md) | `for_each` placed at top of resource or module |
 | [`sort_key_attributes`](docs/sort_key_attributes.md) | Key attributes defined first and in priority order |
 | [`sort_lifecycle`](docs/sort_lifecycle.md) | `lifecycle` block placed at end of resource |
+| [`sort_list_literal`](docs/sort_list_literal.md) | Alphabetical sorting of list-literal contents (opt-out via `skip_sort_literals`) |
 | [`sort_provider`](docs/sort_provider.md) | `provider` placed after `for_each`/`count` |
 | [`sort_sorting`](docs/sort_sorting.md) | Alphabetical sorting of blocks and dictionary keys |
 | [`sort_source`](docs/sort_source.md) | `source` placed after `for_each`/`count` in module |
@@ -35,7 +36,7 @@ You can install the plugin with `tflint --init`. Declare a config in
 plugin "sort" {
   enabled = true
 
-  version = "0.0.8"
+  version = "0.0.9"
   source  = "github.com/thespags/tflint-ruleset-sort"
 }
 ```
@@ -102,6 +103,32 @@ plugin "sort" {
 
 Module blocks are keyed by their `source` value rather than the module name,
 since module names are user-defined and the source uniquely identifies the module.
+
+### Sorting list-literal contents
+
+List-literal elements are sorted by the separate
+[`sort_list_literal`](docs/sort_list_literal.md) rule (enabled by default,
+applies at every AST level). For attributes whose list order is semantically
+meaningful — `command`, `args`, URL `path` matchers, etc. — opt out
+per-resource via `skip_sort_literals`:
+
+```hcl
+plugin "sort" {
+  enabled = true
+
+  resource "example_service" {
+    skip_sort_literals = ["args", "command"]
+  }
+}
+```
+
+To disable list-literal sorting entirely, turn off the rule in `.tflint.hcl`:
+
+```hcl
+rule "sort_list_literal" {
+  enabled = false
+}
+```
 
 ### `resource` vs `data` lookup and one-way fallback
 

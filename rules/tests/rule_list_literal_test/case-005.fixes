@@ -1,0 +1,9 @@
+resource "example_acl" "this" {
+  branch  = "main"
+  project = module.example.id
+  allowed_members = [
+    var.bar.email,
+    var.foo.email,
+    "xyz",
+  ]
+}
