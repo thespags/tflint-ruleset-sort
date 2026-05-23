@@ -1,0 +1,7 @@
+locals {
+  items = [ // header comment on bracket line
+    "alpha",
+    "beta",
+    "zeta",
+  ]
+}

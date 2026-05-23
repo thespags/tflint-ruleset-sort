@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "list-literal is not sorted: expected `module.alpha.id` at position 0, got `module.bravo.id`",
+        "Range": {
+            "Start": {
+                "Line": 5,
+                "Column": 5
+            },
+            "End": {
+                "Line": 5,
+                "Column": 20
+            }
+        }
+    }
+]

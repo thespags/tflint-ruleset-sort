@@ -141,7 +141,8 @@ func (r *ListLiteralRule) walkExpr(
 // sortTupleElements emits an issue and fix when the tuple's elements are not in
 // natural-numeric-aware order. Lists containing expressions that aren't
 // lexically orderable (function calls, complex interpolations) are silently
-// skipped. Trailing inline comments on each element travel with the element.
+// skipped. Trailing inline comments on each element travel with the element,
+// as do contiguous `//` / `#` comment lines directly above each element.
 func (r *ListLiteralRule) sortTupleElements(
 	runner *custom.Runner,
 	src []byte,
@@ -269,24 +270,36 @@ func rebuildTuple(src []byte, tuple *hclsyntax.TupleConsExpr, order []int) strin
 		return "[" + strings.Join(parts, ", ") + "]"
 	}
 
+	tupleStart := tuple.Range().Start.Byte + 1
 	tupleEnd := tuple.Range().End.Byte - 1
 
-	lines := make([]string, len(order))
-	for newIdx, oldIdx := range order {
-		rng := tuple.Exprs[oldIdx].Range()
+	parts := make([]string, len(tuple.Exprs))
+	lineStart := nextNewLine(src, tupleStart, tupleEnd) + 1
+	prefix := string(src[tupleStart:lineStart])
 
-		lineStart := rng.Start.Byte
-		for lineStart > 0 && src[lineStart-1] != '\n' {
-			lineStart--
-		}
+	for srcIdx, expr := range tuple.Exprs {
+		rng := expr.Range()
 
-		lineEnd := rng.End.Byte
-		for lineEnd < tupleEnd && src[lineEnd] != '\n' {
-			lineEnd++
-		}
-
-		lines[newIdx] = string(src[lineStart:lineEnd])
+		lineEnd := nextNewLine(src, rng.End.Byte, tupleEnd)
+		parts[srcIdx] = string(src[lineStart:lineEnd])
+		lineStart = lineEnd + 1
 	}
 
-	return "[\n" + strings.Join(lines, "\n") + "\n]"
+	sorted := make([]string, len(parts))
+	for newIdx, oldIdx := range order {
+		sorted[newIdx] = parts[oldIdx]
+	}
+
+	suffix := string(src[lineStart:tupleEnd])
+
+	return "[" + prefix + strings.Join(sorted, "\n") + "\n" + suffix + "]"
+}
+
+func nextNewLine(src []byte, start, end int) int {
+	i := start
+	for i < end && src[i] != '\n' {
+		i++
+	}
+
+	return i
 }

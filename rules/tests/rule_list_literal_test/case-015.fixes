@@ -1,0 +1,7 @@
+locals {
+  items = [
+    "alpha",
+    "zeta",
+    // tail comment before close bracket
+  ]
+}

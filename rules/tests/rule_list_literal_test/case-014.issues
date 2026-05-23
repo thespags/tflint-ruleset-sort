@@ -1,0 +1,15 @@
+[
+    {
+        "Message": "list-literal is not sorted: expected `alpha` at position 0, got `zeta`",
+        "Range": {
+            "Start": {
+                "Line": 3,
+                "Column": 5
+            },
+            "End": {
+                "Line": 3,
+                "Column": 11
+            }
+        }
+    }
+]

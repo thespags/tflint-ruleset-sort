@@ -1,0 +1,10 @@
+locals {
+  items = [
+    "alpha",
+    # mu needs review
+    # second mu note
+    "mu",
+    # zeta is special
+    "zeta",
+  ]
+}

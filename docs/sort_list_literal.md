@@ -4,7 +4,9 @@ Sorts the elements of list literals (HCL tuples) everywhere they appear:
 top-level attribute values, function-call arguments, nested object values,
 `for` expression results, etc. Comparison is numeric-aware (so `"v2" < "v10"`
 and `3 < 100`). Trailing inline comments (`// ...` or `# ...`) on each
-element travel with the element when the rule auto-fixes.
+element travel with the element when the rule auto-fixes. Contiguous
+single-line comment lines (`// ...` or `# ...`) directly above an element
+are treated as leading comments for that element and travel with it as well.
 
 ## Example
 

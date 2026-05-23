@@ -1,0 +1,9 @@
+resource "example_project" "this" {
+  target_project_ids = [
+    module.alpha.id,
+    // TODO: foobar
+    // see https://example.com/issues/42
+    module.bravo.id,
+    module.charlie.id,
+  ]
+}
