@@ -1,8 +1,6 @@
 package visit
 
 import (
-	"fmt"
-
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
 )
@@ -14,13 +12,12 @@ func Files(runner tflint.Runner, visit func(*hclsyntax.Body, []byte) error) erro
 		return err
 	}
 
-	for name, file := range files {
+	for _, file := range files {
+		// `.tf.json` files have a JSON body; this ruleset's sorting/spacing
+		// rules only apply to HCL source layout, so skip non-HCL files.
 		body, ok := file.Body.(*hclsyntax.Body)
 		if !ok {
-			return fmt.Errorf(
-				"failed to cast `%s`'s file body to HCL-syntax",
-				name,
-			)
+			continue
 		}
 
 		if err := visit(body, file.Bytes); err != nil {
