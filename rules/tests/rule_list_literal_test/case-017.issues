@@ -1,14 +1,14 @@
 [
     {
-        "Message": "list-literal is not sorted: expected `alpha` at position 0, got `zeta`",
+        "Message": "`items` is not sorted. Recommended order:\n[ // header comment on bracket line\n    \"alpha\",\n    \"beta\",\n    \"zeta\",\n  ]",
         "Range": {
             "Start": {
-                "Line": 3,
-                "Column": 5
+                "Line": 2,
+                "Column": 11
             },
             "End": {
-                "Line": 3,
-                "Column": 11
+                "Line": 6,
+                "Column": 4
             }
         }
     }

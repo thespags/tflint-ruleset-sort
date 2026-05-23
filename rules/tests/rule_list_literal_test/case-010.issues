@@ -1,14 +1,14 @@
 [
     {
-        "Message": "list-literal is not sorted: expected `x.region` at position 0, got `x.zone`",
+        "Message": "`result` is not sorted. Recommended order: [x.region, x.zone]",
         "Range": {
             "Start": {
                 "Line": 2,
-                "Column": 46
+                "Column": 45
             },
             "End": {
                 "Line": 2,
-                "Column": 52
+                "Column": 63
             }
         }
     }

@@ -1,14 +1,14 @@
 [
     {
-        "Message": "list-literal is not sorted: expected `var.bar.email` at position 0, got `var.foo.email`",
+        "Message": "`allowed_members` is not sorted. Recommended order:\n[\n    var.bar.email,\n    var.foo.email,\n    \"xyz\",\n  ]",
         "Range": {
             "Start": {
-                "Line": 5,
-                "Column": 5
+                "Line": 4,
+                "Column": 21
             },
             "End": {
-                "Line": 5,
-                "Column": 18
+                "Line": 8,
+                "Column": 4
             }
         }
     }

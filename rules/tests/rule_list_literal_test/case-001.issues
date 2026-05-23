@@ -1,14 +1,14 @@
 [
     {
-        "Message": "list-literal is not sorted: expected `alpha` at position 0, got `gamma`",
+        "Message": "`for_each` is not sorted. Recommended order:\n[\n    \"alpha\",\n    \"beta\",\n    \"gamma\",\n  ]",
         "Range": {
             "Start": {
-                "Line": 3,
-                "Column": 5
+                "Line": 2,
+                "Column": 20
             },
             "End": {
-                "Line": 3,
-                "Column": 12
+                "Line": 6,
+                "Column": 4
             }
         }
     }

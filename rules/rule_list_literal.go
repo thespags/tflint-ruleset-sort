@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 	"strings"
@@ -12,6 +13,8 @@ import (
 	"github.com/thespags/tflint-ruleset-sort/project"
 	"github.com/thespags/tflint-ruleset-sort/visit"
 )
+
+const maxRecommendedElements = 10
 
 // ListLiteralRule sorts the elements of list literals (HCL `TupleConsExpr`)
 // everywhere they appear — top-level attribute values, function-call args,
@@ -69,7 +72,7 @@ func (r *ListLiteralRule) walkBody(
 	skipLiterals map[string]bool,
 ) error {
 	for _, attr := range body.Attributes {
-		if err := r.walkExpr(runner, src, attr.Expr, skipLiterals[attr.Name]); err != nil {
+		if err := r.walkExpr(runner, src, attr.Expr, skipLiterals[attr.Name], attr.Name); err != nil {
 			return err
 		}
 	}
@@ -93,49 +96,64 @@ func (r *ListLiteralRule) walkBody(
 
 // walkExpr recurses through an expression tree. When `skip` is true the
 // current tuple is not sorted, and the flag propagates to its descendants —
-// nested lists inside a skipped attribute are also left alone.
+// nested lists inside a skipped attribute are also left alone. `attrName` is
+// the closest enclosing attribute or object-key name, used in error messages.
 func (r *ListLiteralRule) walkExpr(
 	runner *custom.Runner,
 	src []byte,
 	expression hclsyntax.Expression,
 	skip bool,
+	attrName string,
 ) error {
 	switch expr := expression.(type) {
 	case *hclsyntax.TupleConsExpr:
 		if !skip {
-			if err := r.sortTupleElements(runner, src, expr); err != nil {
+			if err := r.sortTupleElements(runner, src, expr, attrName); err != nil {
 				return err
 			}
 		}
 
 		for _, sub := range expr.Exprs {
-			if err := r.walkExpr(runner, src, sub, skip); err != nil {
+			if err := r.walkExpr(runner, src, sub, skip, attrName); err != nil {
 				return err
 			}
 		}
 
 	case *hclsyntax.ObjectConsExpr:
 		for _, item := range expr.Items {
-			if err := r.walkExpr(runner, src, item.ValueExpr, skip); err != nil {
+			nextName := cmp.Or(objectKeyName(item.KeyExpr), attrName)
+			if err := r.walkExpr(runner, src, item.ValueExpr, skip, nextName); err != nil {
 				return err
 			}
 		}
 
 	case *hclsyntax.FunctionCallExpr:
 		for _, arg := range expr.Args {
-			if err := r.walkExpr(runner, src, arg, skip); err != nil {
+			if err := r.walkExpr(runner, src, arg, skip, attrName); err != nil {
 				return err
 			}
 		}
 
 	case *hclsyntax.ForExpr:
-		return r.walkExpr(runner, src, expr.ValExpr, skip)
+		return r.walkExpr(runner, src, expr.ValExpr, skip, attrName)
 
 	case *hclsyntax.ParenthesesExpr:
-		return r.walkExpr(runner, src, expr.Expression, skip)
+		return r.walkExpr(runner, src, expr.Expression, skip, attrName)
 	}
 
 	return nil
+}
+
+// objectKeyName extracts an object item's key as a bare identifier, or "" when
+// the key isn't a simple identifier (e.g. computed expressions, quoted keys
+// with non-identifier characters).
+func objectKeyName(keyExpr hclsyntax.Expression) string {
+	trav, diags := hcl.AbsTraversalForExpr(keyExpr)
+	if diags.HasErrors() || len(trav) != 1 {
+		return ""
+	}
+
+	return trav.RootName()
 }
 
 // sortTupleElements emits an issue and fix when the tuple's elements are not in
@@ -147,11 +165,55 @@ func (r *ListLiteralRule) sortTupleElements(
 	runner *custom.Runner,
 	src []byte,
 	tuple *hclsyntax.TupleConsExpr,
+	attrName string,
 ) error {
 	if len(tuple.Exprs) < 2 {
 		return nil
 	}
 
+	names := createNames(tuple, src)
+	if names == nil {
+		return nil
+	}
+
+	order := createOrder(tuple, names)
+
+	firstWrong, ok := firstOutOfOrder(order)
+	if !ok {
+		return nil
+	}
+
+	multiLine := tuple.Exprs[0].Range().Start.Line != tuple.OpenRange.Start.Line
+	rebuilt := rebuildTuple(multiLine, src, tuple, order)
+
+	var message string
+
+	switch {
+	case len(order) > maxRecommendedElements:
+		message = fmt.Sprintf(
+			"`%s` is not sorted: expected `%s` at position %d, got `%s`",
+			attrName,
+			names[order[firstWrong]],
+			firstWrong,
+			names[firstWrong],
+		)
+	case multiLine:
+		message = fmt.Sprintf("`%s` is not sorted. Recommended order:\n%s", attrName, rebuilt)
+	default:
+		message = fmt.Sprintf("`%s` is not sorted. Recommended order: %s", attrName, rebuilt)
+	}
+
+	return runner.EmitIssueWithFix(
+		r,
+		message,
+		tuple.Range(),
+		func(fixer tflint.Fixer) error {
+			return fixer.ReplaceText(tuple.Range(), rebuilt)
+		},
+	)
+}
+
+func createNames(tuple *hclsyntax.TupleConsExpr, src []byte) []string {
 	names := make([]string, len(tuple.Exprs))
 
 	for i, e := range tuple.Exprs {
@@ -163,6 +225,10 @@ func (r *ListLiteralRule) sortTupleElements(
 		names[i] = name
 	}
 
+	return names
+}
+
+func createOrder(tuple *hclsyntax.TupleConsExpr, names []string) []int {
 	order := make([]int, len(tuple.Exprs))
 	for i := range order {
 		order[i] = i
@@ -172,47 +238,20 @@ func (r *ListLiteralRule) sortTupleElements(
 		return natCompare(names[a], names[b])
 	})
 
-	if isIdentityOrder(order) {
-		return nil
-	}
-
-	rebuilt := rebuildTuple(src, tuple, order)
-
-	firstWrong := 0
-
-	for i, o := range order {
-		if i != o {
-			firstWrong = i
-
-			break
-		}
-	}
-
-	wrongRange := tuple.Exprs[firstWrong].Range()
-
-	return runner.EmitIssueWithFix(
-		r,
-		fmt.Sprintf(
-			"list-literal is not sorted: expected `%s` at position %d, got `%s`",
-			names[order[firstWrong]],
-			firstWrong,
-			names[firstWrong],
-		),
-		wrongRange,
-		func(fixer tflint.Fixer) error {
-			return fixer.ReplaceText(tuple.Range(), rebuilt)
-		},
-	)
+	return order
 }
 
-func isIdentityOrder(order []int) bool {
+// firstOutOfOrder returns the index of the first element whose new position
+// differs from its source position. ok is true when such an element exists,
+// false when the permutation is the identity (the list is already sorted).
+func firstOutOfOrder(order []int) (int, bool) {
 	for i, o := range order {
 		if i != o {
-			return false
+			return i, true
 		}
 	}
 
-	return true
+	return 0, false
 }
 
 // elementName returns the comparable name of a tuple element, and false if
@@ -257,9 +296,7 @@ func elementName(src []byte, expression hclsyntax.Expression) (string, bool) {
 	}
 }
 
-func rebuildTuple(src []byte, tuple *hclsyntax.TupleConsExpr, order []int) string {
-	multiLine := tuple.Exprs[0].Range().Start.Line != tuple.OpenRange.Start.Line
-
+func rebuildTuple(multiLine bool, src []byte, tuple *hclsyntax.TupleConsExpr, order []int) string {
 	if !multiLine {
 		parts := make([]string, len(order))
 		for newIdx, oldIdx := range order {
