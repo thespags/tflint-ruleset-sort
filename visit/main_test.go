@@ -9,6 +9,8 @@ import (
 )
 
 func TestFiles_SkipsJSON(t *testing.T) {
+	t.Parallel()
+
 	runner := helper.TestRunner(t, map[string]string{
 		"main.tf": `resource "aws_s3_bucket" "b" {
   bucket = "example"
